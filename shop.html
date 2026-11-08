@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>点数商店 · MC-World</title>
+  <meta name="description" content="MC-World 点数商店：称号、背包扩容、地皮扩容、传送点、小游戏入场券与限定披风。点数为唯一货币，不涉及真实支付。">
+  <meta name="theme-color" content="#0a0d12">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a class="sr-only" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="./index.html">
+      <img src="./favicon.svg" alt="MC-World 标志" width="30" height="30">
+      <span>MC-World<small>地球Online 生存网络</small></span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接</a>
+      <a href="./account.html">账号</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </nav>
+    <div class="header-meta">
+      <span class="status-dot" id="api-dot" aria-hidden="true"></span>
+      <span id="api-label">连接中…</span>
+      <span class="header-user" id="header-user"></span>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div class="container">
+    <section class="section mt-0">
+      <div class="section-head">
+        <h2>点数商店</h2>
+        <p class="hint"><span class="badge badge-warn">展示页</span> 购买请在服务器内执行 <code>/shop</code></p>
+      </div>
+      <div class="banner banner-ok">
+        <div><b>本页不处理支付</b>：MC-World 是免费公益服，点数只能通过新用户赠送、小游戏结算与签到获得，<b>不支持任何真实货币充值</b>。本页仅展示商品与价格，实际购买在服务器内完成。</div>
+      </div>
+      <div class="grid grid-3" id="shop-grid">
+        <div class="empty">正在加载商品…</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>怎么获得点数</h2></div>
+      <div class="grid grid-3">
+        <div class="card card-emerald"><h3>新用户赠送</h3><p>注册即得 50,000 点数，约等于 5 枚紫水晶或 500 枚金币。</p></div>
+        <div class="card card-blue"><h3>小游戏结算</h3><p>空岛战争、起床战争、饥饿游戏按名次发放；跑酷刷新纪录有额外奖励。</p></div>
+        <div class="card card-gold"><h3>每日签到</h3><p>主服 <code>/daily</code> 签到，连续天数越多系数越高，断签重置。</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>点数与六币种</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>单位</th><th>等值点数</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>1 金币</td><td class="mono">100</td><td>最小流通单位</td></tr>
+            <tr><td>1 紫水晶</td><td class="mono">10,000</td><td>常用交易单位</td></tr>
+            <tr><td>1 绿宝石</td><td class="mono">1,000,000</td><td>大宗交易</td></tr>
+            <tr><td>1 钻石</td><td class="mono">100,000,000</td><td>高价值储备</td></tr>
+            <tr><td>1 下界合金</td><td class="mono">10,000,000,000</td><td>顶级储备</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted mt-1">汇率固定，商店价格以点数为准；服务器内 <code>/shop</code> 会按当前余额实时换算。</p>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© 2026 MC-World · 公益免费服务器网络<br><span class="muted">非 Mojang 官方项目，与 Mojang / Microsoft 无关联。前端零密钥，静态托管于 GitHub Pages。</span></div>
+    <div class="footer-links">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接指引</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </div>
+  </div>
+</footer>
+  <script src="./config.js" defer></script>
+  <script src="./assets/js/util.js" defer></script>
+  <script src="./assets/js/mock.js" defer></script>
+  <script src="./assets/js/api.js" defer></script>
+  <script src="./assets/js/nav.js" defer></script>
+  <script src="./assets/js/shop.js" defer></script>
+</body>
+</html>
