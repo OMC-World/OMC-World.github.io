@@ -1,0 +1,6 @@
+# MC-World 网页端（GitHub Pages 静态站）
+User-agent: *
+Allow: /
+Disallow: /tools/
+
+# 静态站点，无动态抓取限制；API 位于 Cloudflare Worker，不在本站路径下。
