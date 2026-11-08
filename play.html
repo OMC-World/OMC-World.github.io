@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>玩法介绍 · MC-World</title>
+  <meta name="description" content="MC-World 的四类玩法：小游戏、和平生存、规则服、预定地图，以及地球Online 式的生活方式与服务器自动分配逻辑。">
+  <meta name="theme-color" content="#0a0d12">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a class="sr-only" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="./index.html">
+      <img src="./favicon.svg" alt="MC-World 标志" width="30" height="30">
+      <span>MC-World<small>地球Online 生存网络</small></span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接</a>
+      <a href="./account.html">账号</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </nav>
+    <div class="header-meta">
+      <span class="status-dot" id="api-dot" aria-hidden="true"></span>
+      <span id="api-label">连接中…</span>
+      <span class="header-user" id="header-user"></span>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div class="container">
+    <section class="section mt-0">
+      <div class="section-head">
+        <h2>玩法介绍</h2>
+        <p class="hint"><span class="badge badge-mute">1.21.11+</span> <span class="badge badge-mute">免费</span> <span class="badge badge-mute">跨加载器</span></p>
+      </div>
+      <p class="dim">MC-World 的核心是「地球Online」：你不是在打一个副本，而是在一张持续运行的地球地图上生活。四类玩法共用同一套账号、经济与地皮系统，随时切换。</p>
+    </section>
+
+    <section class="section mt-0">
+      <div class="grid grid-2">
+        <article class="card card-emerald">
+          <h3><span class="ico">◆</span>小游戏服池（#3–#1024）</h3>
+          <p>空岛战争、起床战争、跑酷竞速、饥饿游戏等实例按需启动，空服自动回收。进入时由代理分配延迟最低的空闲实例，退出即结算点数奖励。</p>
+        </article>
+        <article class="card card-purple">
+          <h3><span class="ico">✿</span>和平生存（主服 #2）</h3>
+          <p>主世界关闭 PVP 与爆炸破坏，保留昼夜、天气与生物群系。适合长期建造、红石与交易；地皮系统提供独立建筑空间。</p>
+        </article>
+        <article class="card card-gold">
+          <h3><span class="ico">⚖</span>规则服</h3>
+          <p>规则公开、处罚分级、申诉可查。管理员巡查异常交易与刷物品行为，违规记录与封禁时长在规则页公示。</p>
+        </article>
+        <article class="card card-blue">
+          <h3><span class="ico">⌘</span>预定地图</h3>
+          <p>主城与出生点预生成并修复 spawn 区块，首次进服即可落地行走；地图随版本更新预打包，避免现场生成卡顿。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>在地球上生活</h2></div>
+      <div class="split">
+        <div class="panel">
+          <h3>三条生活路线</h3>
+          <ul>
+            <li><b>建造者</b>：申请地皮、扩建家园、参与主城公共工程，用点数兑换建材与扩容。</li>
+            <li><b>商人</b>：在主城摆摊，用六币种做跨级兑换生意，赚取差价（汇率固定，靠服务与稀缺物资获利）。</li>
+            <li><b>冒险者</b>：刷小游戏拿点数，挑战跑酷纪录，把奖励换成装备与披风。</li>
+          </ul>
+          <p class="dim mb-0">所有路线共享一个账号与一份点数余额，随时切换，不需要重开。</p>
+        </div>
+        <div class="panel">
+          <h3>服务器分配逻辑</h3>
+          <div class="steps" style="grid-template-columns:1fr">
+            <div class="step"><h4>未注册</h4><p>连接 25565 后进入登录服 #1，完成注册/登录。</p></div>
+            <div class="step"><h4>已登录未选服</h4><p>自动进入主服 #2，落地出生点。</p></div>
+            <div class="step"><h4>选择小游戏</h4><p>分配到空闲的 game-N；主服满员或维护时转 mirror-N。</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>常见问题</h2></div>
+      <div class="grid grid-2">
+        <div class="card"><h3>需要正版账号吗？</h3><p>本网络使用自建认证（登录服注册），不强制 Microsoft 正版登录；但仍建议使用正版客户端以获得完整皮肤支持。</p></div>
+        <div class="card"><h3>支持哪些加载器？</h3><p>Fabric、Forge、NeoForge 与原版均可。服务端通过 ViaVersion + ViaBackwards 做协议兼容，客户端版本需 1.21.11 及以上。</p></div>
+        <div class="card"><h3>要装整合包吗？</h3><p>不需要。原版客户端即可进入；小游戏与生存均不强制安装模组。</p></div>
+        <div class="card"><h3>数据会丢吗？</h3><p>主服世界定时快照并保留多份，镜像服只读同步；账号数据独立存放于私有仓，与服务器存档分离。</p></div>
+      </div>
+    </section>
+
+    <section class="section center">
+      <a class="btn btn-primary" href="./connect.html">查看连接指引</a>
+      <a class="btn" href="./servers.html">服务器实时状态</a>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© 2026 MC-World · 公益免费服务器网络<br><span class="muted">非 Mojang 官方项目，与 Mojang / Microsoft 无关联。前端零密钥，静态托管于 GitHub Pages。</span></div>
+    <div class="footer-links">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接指引</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </div>
+  </div>
+</footer>
+  <script src="./config.js" defer></script>
+  <script src="./assets/js/util.js" defer></script>
+  <script src="./assets/js/mock.js" defer></script>
+  <script src="./assets/js/api.js" defer></script>
+  <script src="./assets/js/nav.js" defer></script>
+</body>
+</html>
