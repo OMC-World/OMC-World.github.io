@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>服务器列表与实时状态 · MC-World</title>
+  <meta name="description" content="MC-World 服务器网络：登录服 #1、主服 #2、游戏服池 #3–#1024、镜像服 #1025–#1030，含在线人数、TPS 与延迟实时状态。">
+  <meta name="theme-color" content="#0a0d12">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a class="sr-only" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="./index.html">
+      <img src="./favicon.svg" alt="MC-World 标志" width="30" height="30">
+      <span>MC-World<small>地球Online 生存网络</small></span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接</a>
+      <a href="./account.html">账号</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </nav>
+    <div class="header-meta">
+      <span class="status-dot" id="api-dot" aria-hidden="true"></span>
+      <span id="api-label">连接中…</span>
+      <span class="header-user" id="header-user"></span>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div class="container">
+    <section class="section mt-0">
+      <div class="section-head">
+        <h2>服务器列表</h2>
+        <p class="hint"><span class="badge" id="status-source">读取中</span> <span class="muted">更新于 <span id="status-updated">—</span></span></p>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">在线玩家合计</div><div class="v" id="status-total">—</div></div>
+        <div class="stat"><div class="k">节点数量</div><div class="v" id="status-count">—</div></div>
+        <div class="stat"><div class="k">对外入口</div><div class="v" style="font-size:16px" id="status-entry">play.mc-world.example:25565</div></div>
+        <div class="stat"><div class="k">数据接口</div><div class="v" style="font-size:16px" id="status-api">/api/status</div></div>
+      </div>
+    </section>
+
+    <div class="banner banner-warn hidden" id="offline-banner">
+      <div id="offline-text"></div>
+    </div>
+
+    <section class="section mt-0">
+      <div class="toolbar">
+        <button class="chip active" type="button" data-filter="all">全部</button>
+        <button class="chip" type="button" data-filter="login">登录服</button>
+        <button class="chip" type="button" data-filter="main">主服</button>
+        <button class="chip" type="button" data-filter="game">游戏服</button>
+        <button class="chip" type="button" data-filter="mirror">镜像服</button>
+        <button class="btn btn-sm" type="button" id="refresh-btn" style="margin-left:auto">刷新状态</button>
+      </div>
+      <div class="grid grid-3" id="server-grid">
+        <div class="empty">正在读取服务器状态…</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>端口规划</h2>
+        <p class="hint">对外只暴露 25565，其余端口仅绑定 127.0.0.1</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">MC-World 服务器端口规划</caption>
+          <thead>
+            <tr><th>逻辑 ID</th><th>角色</th><th>端口</th><th>主机</th><th>名称</th><th>说明</th></tr>
+          </thead>
+          <tbody id="server-table-body">
+            <tr><td colspan="6" class="dim">正在读取 /api/servers …</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted mt-1">游戏服端口 = 25567 + (ID − 3)，镜像服端口 = 26589 + (ID − 1025)。表中主机地址为服务端内部绑定地址，玩家只需连接 25565。</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>状态字段说明</h2></div>
+      <div class="grid grid-3">
+        <div class="card"><h3>在线人数</h3><p>当前连接玩家数 / 最大承载。满员后代理会把新玩家分配到镜像服。</p></div>
+        <div class="card"><h3>TPS</h3><p>每秒游戏刻数，20.0 为满速。低于 15 说明该节点负载过高，建议换服。</p></div>
+        <div class="card"><h3>延迟</h3><p>API 到该节点的探针往返毫秒数，仅代表服务端网络质量，不含你本机延迟。</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© 2026 MC-World · 公益免费服务器网络<br><span class="muted">非 Mojang 官方项目，与 Mojang / Microsoft 无关联。前端零密钥，静态托管于 GitHub Pages。</span></div>
+    <div class="footer-links">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接指引</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </div>
+  </div>
+</footer>
+  <script src="./config.js" defer></script>
+  <script src="./assets/js/util.js" defer></script>
+  <script src="./assets/js/mock.js" defer></script>
+  <script src="./assets/js/api.js" defer></script>
+  <script src="./assets/js/nav.js" defer></script>
+  <script src="./assets/js/servers.js" defer></script>
+</body>
+</html>
