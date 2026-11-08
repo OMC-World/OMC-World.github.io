@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>账号注册与登录 · MC-World</title>
+  <meta name="description" content="注册或登录 MC-World 账号。令牌仅保存在本机 localStorage，前端不持有任何密钥。">
+  <meta name="theme-color" content="#0a0d12">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a class="sr-only" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="./index.html">
+      <img src="./favicon.svg" alt="MC-World 标志" width="30" height="30">
+      <span>MC-World<small>地球Online 生存网络</small></span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接</a>
+      <a href="./account.html">账号</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </nav>
+    <div class="header-meta">
+      <span class="status-dot" id="api-dot" aria-hidden="true"></span>
+      <span id="api-label">连接中…</span>
+      <span class="header-user" id="header-user"></span>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div class="container">
+    <section class="section mt-0">
+      <div class="section-head">
+        <h2>账号</h2>
+        <p class="hint"><span class="badge badge-mute" id="account-mode-note">检查 API 配置…</span></p>
+      </div>
+      <div class="auth-wrap">
+
+        <div class="panel">
+          <div id="session-panel" class="hidden">
+            <h3>已登录</h3>
+            <p>当前账号：<b id="session-user">—</b></p>
+            <p class="dim">令牌：<span class="mono break" id="session-token">—</span></p>
+            <p class="dim">来源：<span id="session-source">—</span></p>
+            <div class="banner banner-warn hidden" id="session-demo">
+              <div>演示模式：未连接后端，登录状态仅保存在本机浏览器，不代表真实账号。</div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn" type="button" id="logout-btn">退出登录</button>
+              <a class="btn btn-primary" href="./connect.html">去连接服务器</a>
+            </div>
+          </div>
+
+          <div id="auth-panel">
+            <div class="tabs" id="auth-tabs" role="tablist" aria-label="登录或注册">
+              <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="login" data-tab-group="auth">登录</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="register" data-tab-group="auth">注册</button>
+            </div>
+
+            <div data-panel="login" data-panel-group="auth">
+              <form id="login-form" novalidate>
+                <div class="field">
+                  <label for="login-user">用户名</label>
+                  <input class="input" id="login-user" name="username" autocomplete="username" placeholder="3–16 位字母、数字或下划线" required>
+                </div>
+                <div class="field">
+                  <label for="login-pass">密码</label>
+                  <input class="input" id="login-pass" name="password" type="password" autocomplete="current-password" placeholder="至少 8 位" required>
+                </div>
+                <div class="form-msg" id="login-msg"></div>
+                <button class="btn btn-primary btn-block" type="submit">登录</button>
+                <p class="field-hint">登录成功后令牌保存在本机 localStorage，不会上传到第三方。</p>
+              </form>
+            </div>
+
+            <div data-panel="register" data-panel-group="auth" class="hidden">
+              <form id="register-form" novalidate>
+                <div class="field">
+                  <label for="reg-user">用户名</label>
+                  <input class="input" id="reg-user" name="username" autocomplete="username" placeholder="3–16 位字母、数字或下划线" required>
+                  <p class="field-hint">进服后显示的游戏名，注册后不可修改。</p>
+                </div>
+                <div class="field">
+                  <label for="reg-pass">密码</label>
+                  <input class="input" id="reg-pass" name="password" type="password" autocomplete="new-password" placeholder="至少 8 位" required>
+                </div>
+                <div class="field">
+                  <label for="reg-pass2">确认密码</label>
+                  <input class="input" id="reg-pass2" name="password2" type="password" autocomplete="new-password" placeholder="再输入一次" required>
+                </div>
+                <div class="form-msg" id="register-msg"></div>
+                <button class="btn btn-primary btn-block" type="submit">注册并登录</button>
+                <p class="field-hint">注册即赠 50,000 点数，并同意服务器规则。</p>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panel">
+          <h3>为什么要在网页注册？</h3>
+          <ul>
+            <li><b>统一身份</b>：一个账号进入登录服、主服、小游戏服，不需要重复输入。</li>
+            <li><b>令牌本地化</b>：token 只写入你自己的浏览器，网页端不持有任何服务器密钥。</li>
+            <li><b>数据分离</b>：账号数据存放在独立私有仓，与游戏存档互不影响。</li>
+          </ul>
+          <div class="divider"></div>
+          <h3>安全提示</h3>
+          <ul>
+            <li>不要在任何第三方站点输入你的 MC-World 密码。</li>
+            <li>公共电脑使用后请点击「退出登录」清除本地令牌。</li>
+            <li>管理员不会以任何理由索要密码或令牌。</li>
+          </ul>
+          <div class="divider"></div>
+          <h3>还没决定？</h3>
+          <p class="dim">先看 <a href="./rules.html">服务器规则</a>，或直接到 <a href="./connect.html">连接指引</a> 了解客户端配置。</p>
+        </aside>
+
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© 2026 MC-World · 公益免费服务器网络<br><span class="muted">非 Mojang 官方项目，与 Mojang / Microsoft 无关联。前端零密钥，静态托管于 GitHub Pages。</span></div>
+    <div class="footer-links">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接指引</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </div>
+  </div>
+</footer>
+  <script src="./config.js" defer></script>
+  <script src="./assets/js/util.js" defer></script>
+  <script src="./assets/js/mock.js" defer></script>
+  <script src="./assets/js/api.js" defer></script>
+  <script src="./assets/js/nav.js" defer></script>
+  <script src="./assets/js/account.js" defer></script>
+</body>
+</html>
