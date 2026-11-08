@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>连接指引 · MC-World</title>
+  <meta name="description" content="MC-World 连接指南：客户端版本、服务器地址、登录流程、API 契约与连通性自检。">
+  <meta name="theme-color" content="#0a0d12">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a class="sr-only" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="./index.html">
+      <img src="./favicon.svg" alt="MC-World 标志" width="30" height="30">
+      <span>MC-World<small>地球Online 生存网络</small></span>
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接</a>
+      <a href="./account.html">账号</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </nav>
+    <div class="header-meta">
+      <span class="status-dot" id="api-dot" aria-hidden="true"></span>
+      <span id="api-label">连接中…</span>
+      <span class="header-user" id="header-user"></span>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <div class="container">
+    <section class="section mt-0">
+      <div class="section-head">
+        <h2>连接指引</h2>
+        <p class="hint"><span class="badge" id="conn-mode">检查中…</span> <span class="badge badge-mute">1.21.11+</span></p>
+      </div>
+
+      <div class="panel">
+        <h3>服务器地址</h3>
+        <div class="cmd-block">
+          <code id="conn-addr">play.mc-world.example:25565</code>
+          <button class="btn btn-sm" type="button" data-copy-addr>复制地址</button>
+          <div class="cmd-desc">唯一对外入口（Velocity 登录服）。不要在地址里加 http://，也不要直连 25566 等内部端口。</div>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./account.html">先去注册 / 登录</a>
+          <a class="btn" href="./servers.html">查看实时状态</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>三步进服</h2></div>
+      <div class="steps">
+        <div class="step"><h4>准备客户端</h4><p>安装 1.21.11 及以上的原版、Fabric、Forge 或 NeoForge 客户端，无需整合包。</p></div>
+        <div class="step"><h4>注册账号</h4><p>在 <a href="./account.html">账号页</a> 注册，记住用户名与密码。</p></div>
+        <div class="step"><h4>添加服务器</h4><p>多人游戏 → 添加服务器，地址填上方内容，进入后按提示登录。</p></div>
+        <div class="step"><h4>等待分配</h4><p>登录服验证通过后自动重定向到主服或小游戏服，无需手动换服。</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="split">
+        <div class="panel">
+          <h3>版本与加载器</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>客户端</th><th>支持</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td>原版 1.21.11+</td><td><span class="badge badge-ok">支持</span></td><td>直接连接，无需模组</td></tr>
+                <tr><td>Fabric</td><td><span class="badge badge-ok">支持</span></td><td>可装客户端优化模组</td></tr>
+                <tr><td>Forge / NeoForge</td><td><span class="badge badge-ok">支持</span></td><td>仅客户端模组，勿装服务端模组</td></tr>
+                <tr><td>低于 1.21.11</td><td><span class="badge badge-off">不支持</span></td><td>服务端通过 ViaVersion 兼容新版本，不回溯旧版本</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted mt-1">服务端为 26.3 后端 + ViaVersion / ViaBackwards 协议降级，客户端保持 1.21.11+ 即可。</p>
+        </div>
+
+        <div class="panel">
+          <h3>API 连通性自检</h3>
+          <p class="dim">页面数据来自 Cloudflare Worker。点击按钮会请求一次 <code>GET /api/status</code>，用于确认前后端是否打通。</p>
+          <button class="btn" type="button" id="api-check-btn">检测 API</button>
+          <div class="banner mt-2" id="api-check-result">尚未检测。</div>
+          <p class="field-hint">调试时可用 <code>?api=https://你的-worker.workers.dev</code> 临时覆盖 API 地址（写入 sessionStorage，仅当前标签页有效）。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>API 契约</h2>
+        <p class="hint">前端按此实现，失败自动降级为演示数据</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">MC-World Worker API 契约</caption>
+          <thead><tr><th>方法</th><th>路径</th><th>请求</th><th>响应</th></tr></thead>
+          <tbody id="contract-body">
+            <tr><td colspan="4" class="dim">正在加载契约…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted mt-1">所有响应均为 JSON；鉴权失败返回 <code>{ok:false,error}</code>，HTTP 状态码 4xx/5xx 由前端统一按「离线」处理并展示演示数据。</p>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>连不上？</h2></div>
+      <div class="grid grid-2">
+        <div class="card"><h3>连接超时</h3><p>先确认地址只有 <code>主机:25565</code>，没有多余路径；再检查本地防火墙是否拦截 Java。</p></div>
+        <div class="card"><h3>提示版本不符</h3><p>升级到 1.21.11 或更高版本；低于该版本的客户端无法通过协议校验。</p></div>
+        <div class="card"><h3>登录失败</h3><p>确认网页注册的用户名与密码；连续失败会被限流，请等待几分钟再试。</p></div>
+        <div class="card"><h3>进服后被踢</h3><p>查看踢出原因：多数是未同意规则或客户端安装了被禁模组。可在 <a href="./rules.html">规则页</a> 对照。</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>© 2026 MC-World · 公益免费服务器网络<br><span class="muted">非 Mojang 官方项目，与 Mojang / Microsoft 无关联。前端零密钥，静态托管于 GitHub Pages。</span></div>
+    <div class="footer-links">
+      <a href="./index.html">主页</a>
+      <a href="./play.html">玩法</a>
+      <a href="./servers.html">服务器</a>
+      <a href="./connect.html">连接指引</a>
+      <a href="./rules.html">规则</a>
+      <a href="./shop.html">商店</a>
+    </div>
+  </div>
+</footer>
+  <script src="./config.js" defer></script>
+  <script src="./assets/js/util.js" defer></script>
+  <script src="./assets/js/mock.js" defer></script>
+  <script src="./assets/js/api.js" defer></script>
+  <script src="./assets/js/nav.js" defer></script>
+  <script src="./assets/js/connect.js" defer></script>
+</body>
+</html>
