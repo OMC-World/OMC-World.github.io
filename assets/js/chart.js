@@ -8,7 +8,7 @@
     var arr = [];
     (points || []).forEach(function (pt) {
       if (pt === null || pt === undefined) return;
-      var t = pt.t !== undefined ? pt.t : pt.time;
+      var t = pt.t !== undefined ? pt.t : (pt.ts !== undefined ? pt.ts : pt.time);
       var p = pt.p !== undefined ? pt.p : pt.price;
       var ts = typeof t === 'number' ? (t < 1e12 ? t * 1000 : t) : Date.parse(t);
       var pv = Number(p);
