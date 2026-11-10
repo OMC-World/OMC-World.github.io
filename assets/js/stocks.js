@@ -118,6 +118,14 @@
     if (q && q.value !== '' && Number(q.value) < 1) q.value = '1';
   }
 
+  /* 列表接口当前返回 {items:[...]}；旧契约/测试桩用 {stocks:[...]}，两种都认，其他返回 null */
+  function normalizeList(d) {
+    if (!d) return null;
+    if (Array.isArray(d.stocks)) return d.stocks;
+    if (Array.isArray(d.items)) return d.items;
+    return null;
+  }
+
   /* 详情接口有两种形状：
      {symbol, quote:{...}, history:[{ts,price}]}（当前 Worker）
      或直接一只股票的扁平对象（兼容旧契约） */
@@ -187,6 +195,8 @@
     estimate: estimate,
     validate: validate,
     tradeEnabled: tradeEnabled,
+    normalizeList: normalizeList,
+    normalizeDetail: normalizeDetail,
     state: state
   };
 
@@ -223,8 +233,7 @@
     listPoller = MCW.live.make('/api/stocks', { interval: CFG.pollMs || 5000 });
     listPoller.on(function (p) {
       state.listState = p.state;
-      /* 服务端返回 {items:[...]}；旧 stub/兼容字段 stocks 也认 */
-      var list = p.data ? (Array.isArray(p.data.stocks) ? p.data.stocks : (Array.isArray(p.data.items) ? p.data.items : null)) : null;
+      var list = normalizeList(p.data);
       if (list) {
         state.list = list;
         if (!state.selected && state.list.length) select(state.list[0].symbol);
