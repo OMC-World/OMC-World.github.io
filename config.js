@@ -1,18 +1,14 @@
-/* ============================================================
- * MC-World 网页端配置
- * ------------------------------------------------------------
- * 部署时只需要改这一个文件（或部署脚本替换这一行）：
- *   把 <account> 替换成你的 Cloudflare 账号子域。
- *
- * 若保留占位符（含 "<"）或留空，前端会自动进入「演示模式」：
- * 用内置 mock 数据渲染页面，不会白屏、不会报错。
- * 前端永远不持有任何密钥。
- * ============================================================ */
-window.MCWORLD_API = "https://mc-world-api.<account>.workers.dev";
-
-/* 对外连接地址（Cloudflare Tunnel 指向的 Velocity 登录服） */
-window.MCWORLD_HOST = "play.mc-world.example";
-window.MCWORLD_PORT = 25565;
-
-/* 客户端版本要求（仅展示用） */
-window.MCWORLD_VERSION = "1.21.11 及以上（Fabric / Forge / NeoForge / 原版）";
+/* OMC World 前端配置：部署时只改这里 */
+window.MCW_CONFIG = {
+  /* 实时数据服务基址（Cloudflare Pages Functions）；留空 = 未连接 */
+  api: "https://omc-world.pages.dev",
+  /* 公网连接地址；留空 = 入口尚未开通，页面显示「待开通」而不是假地址 */
+  host: "",
+  port: 25565,
+  /* 服务器支持的最低版本（ViaVersion 协议翻译，1.21.11 ~ 26.3 都能进） */
+  version: "1.21.11",
+  /* 账号页地址；留空 = 暂未开放 */
+  accountUrl: "",
+  /* 轮询间隔（毫秒） */
+  pollMs: 5000
+};
