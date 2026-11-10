@@ -3,10 +3,7 @@
   'use strict';
   var MCW = window.MCW || (window.MCW = {});
   var CFG = window.MCW_CONFIG || {};
-  var HOST = String(CFG.host || '').trim();
-  /* 只有真地址才显示；example / 空 / 含「待开通」一律视为未开通，绝不展示假地址 */
-  var ADDR_READY = !!HOST && !/example|your-|待开通|^play\./i.test(HOST);
-  var PORT = CFG.port || 25565;
+  /* 公网地址由 /api/link/start 返回；首页没有会话，不主动生成绑定码，默认显示待开通 */
   var VER = CFG.version || '1.21.11';
   var SAMPLES = 'omc_online_samples';
   var MAX_POINTS = 180;
@@ -100,13 +97,8 @@
   MCW.ready(function () {
     var addr = document.getElementById('addr');
     var cp = document.getElementById('copy-addr');
-    if (ADDR_READY) {
-      if (addr) addr.textContent = HOST + ':' + PORT;
-      if (cp) cp.setAttribute('data-copy', HOST + ':' + PORT);
-    } else {
-      if (addr) addr.textContent = '待开通';
-      if (cp) { cp.setAttribute('data-copy', ''); cp.disabled = true; cp.textContent = '未开通'; }
-    }
+    if (addr) addr.textContent = '待开通';
+    if (cp) { cp.setAttribute('data-copy', ''); cp.disabled = true; cp.textContent = '未开通'; }
     text('addr-version', VER);
     text('stat-version', VER);
 
