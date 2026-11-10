@@ -118,6 +118,22 @@
     if (q && q.value !== '' && Number(q.value) < 1) q.value = '1';
   }
 
+  /* 详情接口有两种形状：
+     {symbol, quote:{...}, history:[{ts,price}]}（当前 Worker）
+     或直接一只股票的扁平对象（兼容旧契约） */
+  function normalizeDetail(d) {
+    if (!d) return null;
+    var base = d.quote || d.stock || d.item || (d.price !== undefined ? d : null);
+    if (!base) return null;
+    var out = {};
+    for (var k in base) if (Object.prototype.hasOwnProperty.call(base, k)) out[k] = base[k];
+    if (!out.symbol) out.symbol = d.symbol || '';
+    var hist = Array.isArray(d.history) ? d.history : (Array.isArray(base.history) ? base.history : null);
+    if (hist) out.history = hist;
+    if (d.ts && !out.ts) out.ts = d.ts;
+    return out;
+  }
+
   function select(symbol) {
     if (!symbol || symbol === state.selected) return;
     state.selected = symbol;
@@ -129,7 +145,7 @@
     detailPoller = MCW.live.make('/api/stocks/' + encodeURIComponent(symbol), { interval: CFG.pollMs || 5000 });
     detailPoller.on(function (p) {
       state.detailState = p.state;
-      if (p.data) state.detail = p.data.symbol ? p.data : (p.data.stock || p.data.item || null);
+      if (p.data) state.detail = normalizeDetail(p.data);
       renderDetail();
       paintSource(p);
     });
@@ -207,8 +223,10 @@
     listPoller = MCW.live.make('/api/stocks', { interval: CFG.pollMs || 5000 });
     listPoller.on(function (p) {
       state.listState = p.state;
-      if (p.data && Array.isArray(p.data.stocks)) {
-        state.list = p.data.stocks;
+      /* 服务端返回 {items:[...]}；旧 stub/兼容字段 stocks 也认 */
+      var list = p.data ? (Array.isArray(p.data.stocks) ? p.data.stocks : (Array.isArray(p.data.items) ? p.data.items : null)) : null;
+      if (list) {
+        state.list = list;
         if (!state.selected && state.list.length) select(state.list[0].symbol);
       }
       renderList();
