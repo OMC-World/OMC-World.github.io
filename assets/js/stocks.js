@@ -92,7 +92,7 @@
     text('d-sector', d.sector || '—');
     text('d-updated', d.ts ? '更新 ' + MCW.clock(d.ts) : '');
     if (chart && Array.isArray(d.history) && d.history.length > 1) {
-      MCW.chart.line(chart, d.history, { height: 220, label: d.symbol + ' 价格', fmt: function (v) { return MCW.price(v); } });
+      MCW.chart.line(chart, d.history, { height: 220, label: d.symbol + ' 价格', fmt: function (v) { return MCW.price(v); }, volume: true });
     } else if (chart) {
       chart.innerHTML = '<div class="chart-empty">暂无数据</div>';
     }
