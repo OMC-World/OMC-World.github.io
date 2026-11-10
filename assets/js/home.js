@@ -1,83 +1,124 @@
-/* 首页：状态摘要 + 推荐服务器 */
+/* 首页：实时状态、在线人数采样折线、服务器信息（零依赖） */
 (function () {
   'use strict';
-  var MCW = window.MCW;
+  var MCW = window.MCW || (window.MCW = {});
+  var CFG = window.MCW_CONFIG || {};
+  var HOST = String(CFG.host || '').trim();
+  /* 只有真地址才显示；example / 空 / 含「待开通」一律视为未开通，绝不展示假地址 */
+  var ADDR_READY = !!HOST && !/example|your-|待开通|^play\./i.test(HOST);
+  var PORT = CFG.port || 25565;
+  var VER = CFG.version || '1.21.11';
+  var SAMPLES = 'omc_online_samples';
+  var MAX_POINTS = 180;
+  var samples = load();
 
-  function portOf(s) {
-    if (s.role === 'login') return 25565;
-    if (s.role === 'main') return 25566;
-    if (s.role === 'mirror') return 26589 + (Number(s.id) - 1025);
-    return 25567 + (Number(s.id) - 3);
+  function load() {
+    try {
+      var a = JSON.parse(sessionStorage.getItem(SAMPLES) || '[]');
+      return Array.isArray(a) ? a.slice(-MAX_POINTS) : [];
+    } catch (e) { return []; }
   }
 
-  function renderSummary(r) {
-    var servers = r.servers || [];
-    var online = 0, running = 0, games = 0, tpsSum = 0, tpsN = 0;
-    servers.forEach(function (s) {
-      online += MCW.onlineCount(s);
-      if (s.status === 'online') running += 1;
-      if (s.role === 'game') games += 1;
-      var tps = Number(s.tps);
-      if (isFinite(tps) && tps > 0) { tpsSum += tps; tpsN += 1; }
-    });
-    var tpsAvg = tpsN ? (tpsSum / tpsN).toFixed(1) : '—';
+  function save() {
+    try { sessionStorage.setItem(SAMPLES, JSON.stringify(samples.slice(-MAX_POINTS))); } catch (e) {}
+  }
 
-    var set = function (id, v) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = v;
-    };
-    set('stat-online', MCW.fmtInt(online));
-    set('stat-servers', MCW.fmtInt(running) + ' / ' + MCW.fmtInt(servers.length));
-    set('stat-games', MCW.fmtInt(games));
-    set('stat-tps', tpsAvg);
+  function text(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = v;
+  }
 
-    var src = document.getElementById('home-source');
-    if (src) {
-      var live = r.source === 'live';
-      src.className = 'badge ' + (live ? 'badge-ok' : 'badge-warn');
-      src.textContent = live ? '实时数据' : '离线演示';
-      src.title = live ? '数据来自 GET /api/status' : 'API 不可达，展示内置演示数据';
-    }
-    var upd = document.getElementById('home-updated');
-    if (upd) upd.textContent = '更新于 ' + MCW.timeAgo(r.updatedAt);
+  function uptime(sec) {
+    var s = Number(sec);
+    if (!isFinite(s) || s < 0) return '—';
+    var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    if (d) return d + ' 天 ' + h + ' 小时';
+    if (h) return h + ' 小时 ' + m + ' 分';
+    return m + ' 分';
+  }
 
-    var top = servers.filter(function (s) { return s.status === 'online'; })
-      .sort(function (a, b) { return MCW.onlineCount(b) - MCW.onlineCount(a); })
-      .slice(0, 3);
-
-    var box = document.getElementById('home-server-list');
-    if (!box) return;
-    if (!top.length) {
-      box.innerHTML = '<div class="empty">暂无在线服务器</div>';
+  function renderChart() {
+    var el = document.getElementById('online-chart');
+    if (!el) return;
+    if (samples.length < 2) {
+      el.innerHTML = '<div class="chart-empty">' + (MCW.api.connected() ? '数据采集中，至少需要两次成功请求' : '暂无数据') + '</div>';
       return;
     }
-    box.innerHTML = top.map(function (s) {
-      var cur = MCW.onlineCount(s);
-      var pct = s.max ? Math.min(100, Math.round(cur / s.max * 100)) : 0;
-      return '<a class="card server-card" href="./servers.html" style="text-decoration:none;color:inherit">' +
-        '<div class="server-top"><div><div class="server-id">ID #' + MCW.esc(s.id) + ' · 端口 ' + portOf(s) + '</div>' +
-        '<h3 class="server-name">' + MCW.esc(s.name || ('服务器 #' + s.id)) + '</h3>' +
-        '<div class="server-role">' + MCW.esc(MCW.roleText(s.role)) + '</div></div>' +
-        '<span class="badge ' + MCW.statusClass(s.status) + '">' + MCW.statusText(s.status) + '</span></div>' +
-        '<div><div class="kv"><span>在线玩家</span><b>' + MCW.fmtInt(cur) + ' / ' + MCW.fmtInt(s.max || 0) + '</b></div>' +
-        '<div class="meter' + (pct >= 95 ? ' full' : (pct >= 75 ? ' warn' : '')) + '"><span style="width:' + pct + '%"></span></div></div>' +
-        '<div class="kv"><span>TPS</span><b>' + (Number(s.tps) > 0 ? Number(s.tps).toFixed(1) : '—') + '</b></div>' +
-        '<div class="kv"><span>延迟</span><b>' + (Number(s.latency) > 0 ? Number(s.latency) + ' ms' : '—') + '</b></div>' +
-        '</a>';
-    }).join('');
+    MCW.chart.line(el, samples, {
+      height: 240,
+      label: '在线人数',
+      fmt: function (v) { return MCW.fmtInt(v); }
+    });
+    text('chart-meta', '采样 ' + samples.length + ' 点 · 每 ' + Math.round((CFG.pollMs || 5000) / 1000) + ' 秒');
+  }
+
+  function paint(p) {
+    var d = p.data || {};
+    text('stat-online', d.online !== undefined && d.online !== null ? MCW.fmtInt(d.online) : '—');
+    text('stat-max', d.max !== undefined && d.max !== null ? '/ ' + MCW.fmtInt(d.max) : '');
+    text('stat-tps', d.tps !== undefined && d.tps !== null ? Number(d.tps).toFixed(1) : '—');
+    text('stat-version', d.version || VER);
+
+    var dot = document.getElementById('src-dot');
+    if (dot) dot.className = 'dot ' + MCW.live.stateClass(p.state);
+    text('src-text', p.state === 'live' ? '数据源已连接' : MCW.live.label(p.state));
+    text('src-time', p.lastOk ? '更新 ' + MCW.clock(p.lastOk) : '');
+
+    var note = document.getElementById('offline-note');
+    if (note) note.classList.toggle('hidden', p.state === 'live');
+    var det = document.getElementById('offline-detail');
+    if (det) {
+      det.textContent = p.state === 'stale'
+        ? '连接中断于 ' + MCW.clock(p.downSince) + '，显示最后一次成功数据，每 5 秒重试。'
+        : '等待服务端恢复，页面每 5 秒重试。';
+    }
+
+    text('srv-meta', d.motd ? String(d.motd) : '—');
+    text('srv-state', d.online !== undefined ? (Number(d.online) > 0 ? '运行中' : '空闲') : '—');
+    text('srv-version', d.version || '—');
+    text('srv-world', d.world && d.world.name ? d.world.name + (d.world.day !== undefined ? ' · 第 ' + d.world.day + ' 天' : '') : '—');
+    text('srv-uptime', uptime(d.uptimeSec));
+
+    var players = Array.isArray(d.players) ? d.players : [];
+    var names = players.map(function (x) { return x && x.name ? x.name : ''; }).filter(Boolean);
+    text('srv-players', players.length
+      ? '在线玩家 ' + players.length + ' 人' + (names.length ? '：' + names.slice(0, 8).join('、') + (names.length > 8 ? ' 等' : '') : '')
+      : '当前无玩家在线');
+
+    if (p.state === 'live' && d.online !== undefined && d.online !== null) {
+      var last = samples[samples.length - 1];
+      var t = p.lastOk || Date.now();
+      if (!last || last.p !== Number(d.online) || t - last.t >= 4500) {
+        samples.push({ t: t, p: Number(d.online) });
+        if (samples.length > MAX_POINTS) samples = samples.slice(-MAX_POINTS);
+        save();
+      }
+      renderChart();
+    }
   }
 
   MCW.ready(function () {
-    var hostEl = document.getElementById('hero-host');
-    if (hostEl) {
-      hostEl.textContent = (window.MCWORLD_HOST || 'play.mc-world.example') + ':' + (window.MCWORLD_PORT || 25565);
+    var addr = document.getElementById('addr');
+    var cp = document.getElementById('copy-addr');
+    if (ADDR_READY) {
+      if (addr) addr.textContent = HOST + ':' + PORT;
+      if (cp) cp.setAttribute('data-copy', HOST + ':' + PORT);
+    } else {
+      if (addr) addr.textContent = '待开通';
+      if (cp) { cp.setAttribute('data-copy', ''); cp.disabled = true; cp.textContent = '未开通'; }
     }
-    var ipBtn = document.getElementById('copy-ip');
-    if (ipBtn) {
-      ipBtn.setAttribute('data-copy', (window.MCWORLD_HOST || 'play.mc-world.example') + ':' + (window.MCWORLD_PORT || 25565));
+    text('addr-version', VER);
+    text('stat-version', VER);
+
+    renderChart();
+
+    if (!MCW.api.connected()) {
+      paint({ state: 'down', data: null, lastOk: 0, downSince: Date.now() });
+      return;
     }
-    MCW.api.getStatus().then(renderSummary).catch(function () {
-      renderSummary({ ok: false, mode: 'offline', source: 'mock', servers: MCW.mock.status().servers, updatedAt: new Date().toISOString() });
-    });
+
+    var poller = MCW.live.make('/api/status', { interval: CFG.pollMs || 5000 });
+    poller.on(paint);
+    poller.start();
   });
 })();
