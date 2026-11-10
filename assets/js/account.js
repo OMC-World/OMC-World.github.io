@@ -145,6 +145,10 @@
   }
 
   function showLink(d) {
+    d = d || {};
+    if (MCW.play && typeof MCW.play.setServerAddress === 'function') {
+      MCW.play.setServerAddress(d.serverAddress);
+    }
     state.code = String(d.code || '').trim();
     state.expireAt = parseExpire(d.expireAt);
     toggle('link-box', true);
