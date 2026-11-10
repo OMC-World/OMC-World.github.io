@@ -12,25 +12,25 @@
     });
   }
 
+  /* 账号功能在 play.html 内；accountUrl 配置后优先跳外部账号站 */
   function paintAccount() {
     var els = MCW.qsa('[data-account-link]');
     if (!els.length) return;
-    var url = MCW.api.accountUrl();
+    var external = MCW.api.accountUrl();
+    var url = external || './play.html';
     els.forEach(function (el) {
-      if (!url) {
-        el.classList.add('is-off');
-        el.setAttribute('aria-disabled', 'true');
-        el.removeAttribute('href');
-        el.setAttribute('title', '暂未开放');
-        var note = el.querySelector('[data-account-note]');
-        if (note) note.textContent = '暂未开放';
-        return;
-      }
+      el.classList.remove('is-off');
+      el.removeAttribute('aria-disabled');
       el.setAttribute('href', url);
-      el.setAttribute('target', '_blank');
-      el.setAttribute('rel', 'noopener');
-      var n2 = el.querySelector('[data-account-note]');
-      if (n2) n2.textContent = '';
+      if (external) {
+        el.setAttribute('target', '_blank');
+        el.setAttribute('rel', 'noopener');
+      } else {
+        el.removeAttribute('target');
+        el.removeAttribute('rel');
+      }
+      var note = el.querySelector('[data-account-note]');
+      if (note) note.textContent = '';
     });
   }
 
