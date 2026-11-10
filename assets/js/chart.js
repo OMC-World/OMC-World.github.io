@@ -13,7 +13,9 @@
       var ts = typeof t === 'number' ? (t < 1e12 ? t * 1000 : t) : Date.parse(t);
       var pv = Number(p);
       if (!isFinite(ts) || !isFinite(pv)) return;
-      arr.push({ t: ts, p: pv });
+      var vol = pt.v !== undefined ? pt.v : pt.volume;
+      var vv = Number(vol);
+      arr.push({ t: ts, p: pv, v: isFinite(vv) && vv > 0 ? vv : 0 });
     });
     return arr;
   }
@@ -37,17 +39,43 @@
 
   function esc(v) { return MCW.esc ? MCW.esc(v) : String(v); }
 
+  /* 成交量柱高：按窗口内最大成交量归一；0 / 非数 / 无最大值一律不画 */
+  function volumeHeight(v, max, h) {
+    var vv = Number(v), mm = Number(max), hh = Number(h);
+    if (!isFinite(vv) || !isFinite(mm) || !isFinite(hh) || vv <= 0 || mm <= 0 || hh <= 0) return 0;
+    return Math.max(1, Math.round((vv / mm) * hh));
+  }
+
+  /* 价格区 + 底部成交量区的共用布局；v 全为 0 时不画柱子，保持原折线布局 */
+  function layoutOf(w, h, opts, series, allowVolume) {
+    var padL = 54, padR = 16, padT = 16, padB = 26;
+    var iw = w - padL - padR;
+    var innerH = h - padT - padB;
+    var maxV = 0;
+    if (opts && opts.volume && allowVolume) {
+      series.forEach(function (s) { if (s.v > maxV) maxV = s.v; });
+    }
+    var hasVol = maxV > 0;
+    var gap = hasVol ? 10 : 0;
+    var volH = hasVol ? Math.min(64, Math.max(24, Math.round(innerH * 0.28))) : 0;
+    if (hasVol && volH + gap > innerH - 20) volH = Math.max(16, innerH - gap - 20);
+    var ih = innerH - volH - gap;
+    return { padL: padL, padR: padR, padT: padT, padB: padB, iw: iw, ih: ih,
+      volTop: padT + ih + gap, volH: volH, hasVol: hasVol, maxV: maxV };
+  }
+
   function lineSVG(points, opts) {
     opts = opts || {};
     var series = seriesOf(points);
     if (!series.length) return '<div class="chart-empty">暂无数据</div>';
-    if (series.length === 1) series = [{ t: series[0].t - 60000, p: series[0].p }, series[0]];
+    var rawLen = series.length;
+    if (series.length === 1) series = [{ t: series[0].t - 60000, p: series[0].p, v: 0 }, series[0]];
 
     var w = Math.max(240, Number(opts.width) || 720);
     var h = Math.max(120, Number(opts.height) || 260);
-    var padL = 54, padR = 16, padT = 16, padB = 26;
-    var iw = w - padL - padR;
-    var ih = h - padT - padB;
+    var L = layoutOf(w, h, opts, series, rawLen >= 2);
+    var padL = L.padL, padR = L.padR, padT = L.padT;
+    var iw = L.iw, ih = L.ih;
     var min = Infinity, max = -Infinity, i;
     for (i = 0; i < series.length; i++) {
       if (series[i].p < min) min = series[i].p;
@@ -89,6 +117,21 @@
     var last = series.length - 1;
     out.push('<circle class="last-dot" cx="' + x(last).toFixed(1) + '" cy="' + y(series[last].p).toFixed(1) + '" r="2.6" fill="' + color + '"/>');
 
+    if (L.hasVol) {
+      var bw = Math.max(1, Math.min(18, (iw / Math.max(1, series.length - 1)) * 0.5));
+      out.push('<line class="vol-base" x1="' + padL + '" y1="' + (L.volTop + L.volH) + '" x2="' + (w - padR) + '" y2="' + (L.volTop + L.volH) + '" stroke="' + COLOR.axis + '" stroke-width="1"/>');
+      out.push('<g class="vol-bars">');
+      for (i = 0; i < series.length; i++) {
+        var vh = volumeHeight(series[i].v, L.maxV, L.volH);
+        if (!vh) continue;
+        var bx = Math.min(w - padR - bw, Math.max(padL, x(i) - bw / 2));
+        var by = L.volTop + L.volH - vh;
+        var up = i === 0 ? true : series[i].p >= series[i - 1].p;
+        out.push('<rect class="vol-bar" x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + vh + '" fill="' + (up ? COLOR.up : COLOR.down) + '" fill-opacity="0.5" data-v="' + esc(series[i].v) + '"><title>成交量 ' + esc(String(Math.round(series[i].v))) + '</title></rect>');
+      }
+      out.push('</g>');
+    }
+
     out.push('<g class="chart-hover" opacity="0" pointer-events="none">');
     out.push('<line class="hover-line" x1="0" y1="' + padT + '" x2="0" y2="' + (padT + ih) + '" stroke="' + COLOR.axis + '" stroke-width="1" stroke-dasharray="3 3"/>');
     out.push('<circle class="hover-dot" cx="0" cy="0" r="3.4" fill="' + color + '"/>');
@@ -107,8 +150,8 @@
     if (series.length < 2) return;
     var w = Number(svg.getAttribute('viewBox').split(' ')[2]);
     var h = Number(svg.getAttribute('viewBox').split(' ')[3]);
-    var padL = 54, padR = 16, padT = 16, padB = 26;
-    var iw = w - padL - padR, ih = h - padT - padB;
+    var L = layoutOf(w, h, opts, series, series.length >= 2);
+    var padL = L.padL, padT = L.padT, iw = L.iw, ih = L.ih;
     var min = Infinity, max = -Infinity, i;
     for (i = 0; i < series.length; i++) {
       if (series[i].p < min) min = series[i].p;
@@ -218,5 +261,5 @@
     el.innerHTML = out.join('');
   }
 
-  MCW.chart = { line: render, lineSVG: lineSVG, spark: spark, bars: bars, series: seriesOf };
+  MCW.chart = { line: render, lineSVG: lineSVG, spark: spark, bars: bars, series: seriesOf, volumeHeight: volumeHeight };
 })();
