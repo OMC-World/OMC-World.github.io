@@ -35,7 +35,7 @@
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT) : null;
     var headers = { Accept: 'application/json' };
     if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
-    var init = { method: opts.method || 'GET', headers: headers, cache: 'no-store' };
+    var init = { method: opts.method || 'GET', headers: headers, cache: 'no-store', credentials: 'include' };
     if (ctrl) init.signal = ctrl.signal;
     if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
 
