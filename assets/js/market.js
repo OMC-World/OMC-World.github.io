@@ -8,6 +8,34 @@
 
   function text(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
 
+  function displayName(id) {
+    var raw = String(id === null || id === undefined ? '' : id);
+    var key = raw.indexOf('minecraft:') === 0 ? raw.slice(10) : raw;
+    var zh = MCW.itemsZh && Object.prototype.hasOwnProperty.call(MCW.itemsZh, key) ? MCW.itemsZh[key] : '';
+    if (zh) return zh;
+    return key.replace(/_/g, ' ');
+  }
+
+  function normalizeItem(it) {
+    if (!it || typeof it !== 'object') return it;
+    var out = {};
+    for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) out[k] = it[k];
+    if (out.change24h === undefined || out.change24h === null) {
+      var n = Number(out.changePct);
+      if (isFinite(n)) out.change24h = n;
+    }
+    return out;
+  }
+
+  function normalizeMarket(input) {
+    if (Array.isArray(input)) return input.map(normalizeItem);
+    if (input && typeof input === 'object') {
+      if (Array.isArray(input.items)) return input.items.map(normalizeItem);
+      return normalizeItem(input);
+    }
+    return [];
+  }
+
   function paintSource(p) {
     var dot = document.getElementById('src-dot');
     if (dot) dot.className = 'dot ' + MCW.live.stateClass(p.state);
@@ -35,7 +63,7 @@
     body.innerHTML = state.items.map(function (it) {
       var dir = MCW.dirClass(it.change24h);
       return '<tr data-id="' + MCW.esc(it.id) + '"' + (it.id === state.selected ? ' class="sel"' : '') + '>' +
-        '<td class="name">' + MCW.esc(it.name || it.id) + '</td>' +
+        '<td class="name">' + MCW.esc(displayName(it.id || it.name)) + '</td>' +
         '<td class="num">' + MCW.price(it.price) + '</td>' +
         '<td class="num ' + dir + '">' + MCW.pct(it.change24h) + '</td>' +
         '<td class="num">' + MCW.fmtInt(it.volume) + '</td>' +
@@ -53,7 +81,7 @@
       if (chart) chart.innerHTML = '<div class="chart-empty">暂无数据</div>';
       return;
     }
-    text('i-name', d.name || d.id || '—');
+    text('i-name', displayName(d.id || d.name) || '—');
     text('i-price', MCW.price(d.price));
     var chg = document.getElementById('i-chg');
     if (chg) {
@@ -66,7 +94,7 @@
     text('i-id', d.id || '—');
     text('i-updated', d.ts ? '更新 ' + MCW.clock(d.ts) : '');
     if (chart && Array.isArray(d.history) && d.history.length > 1) {
-      MCW.chart.line(chart, d.history, { height: 220, label: (d.name || d.id) + ' 价格', fmt: function (v) { return MCW.price(v); } });
+      MCW.chart.line(chart, d.history, { height: 220, label: displayName(d.id || d.name) + ' 价格', fmt: function (v) { return MCW.price(v); } });
     } else if (chart) {
       chart.innerHTML = '<div class="chart-empty">暂无数据</div>';
     }
@@ -81,6 +109,8 @@
     renderList();
     renderDetail();
   }
+
+  MCW.market = { normalizeMarket: normalizeMarket, displayName: displayName };
 
   MCW.ready(function () {
     var body = document.getElementById('market-body');
@@ -102,7 +132,7 @@
     poller.on(function (p) {
       state.conn = p.state;
       if (p.data && Array.isArray(p.data.items)) {
-        state.items = p.data.items;
+        state.items = normalizeMarket(p.data.items);
         if (!state.selected && state.items.length) pick(state.items[0].id);
         else if (state.selected) {
           for (var i = 0; i < state.items.length; i++) {
