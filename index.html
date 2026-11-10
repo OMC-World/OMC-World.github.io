@@ -3,209 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OMC-World 市政门户 · Omni Minecraft World</title>
-<meta name="description" content="OMC-World 是一座持续运转的 Minecraft 现代生存城市：四个城区、六币种经济、按线路调度的服务器群与市政条例。">
+<title>OMC World · 服务器状态</title>
+<meta name="description" content="OMC World 服务器实时状态：在线人数、TPS 与连接地址。">
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="./index.html">OMC <span>WORLD</span></a>
+    <nav class="nav">
+      <a href="./index.html">状态</a>
+      <a href="./stocks.html">股票</a>
+      <a href="./market.html">物品行情</a>
+      <a href="./play.html">进服</a>
+      <a href="./rules.html">规则</a>
+    </nav>
+    <a class="btn btn-sm account" data-account-link href="./play.html">账号绑定 <span data-account-note></span></a>
+  </div>
+</header>
+<main class="wrap">
+  <div class="page-head">
+    <h1>服务器状态</h1>
+    <p class="sub">实时读取服务端数据，每 5 秒刷新；断线时保留最后一次成功数据。</p>
+  </div>
+
+  <section class="statusbar" aria-live="polite">
+    <div class="stat-inline"><span class="k">在线</span><span class="v" id="stat-online">—</span><span class="k" id="stat-max"></span></div>
+    <div class="stat-inline"><span class="k">TPS</span><span class="v" id="stat-tps">—</span></div>
+    <div class="stat-inline"><span class="k">版本</span><span class="v" id="stat-version">—</span></div>
+    <div class="src"><span class="dot off" id="src-dot"></span><span id="src-text">连接中</span><span class="sep">·</span><span id="src-time"></span></div>
+  </section>
+
+  <div class="notice hidden" id="offline-note">
+    <span class="dot off"></span>
+    <div><b>服务端未连接</b> · <span id="offline-detail">等待服务端恢复，页面每 5 秒重试。</span></div>
+  </div>
+
+  <div class="grid-main">
+    <section class="panel">
+      <div class="panel-head"><h2>在线人数</h2><span class="meta" id="chart-meta">采样中</span></div>
+      <div class="panel-body"><div class="chart" id="online-chart"><div class="chart-empty">数据采集中</div></div></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>服务器</h2><span class="meta" id="srv-meta">—</span></div>
+      <div class="panel-body">
+        <div class="kv kv-1">
+          <div><span>状态</span><b id="srv-state">—</b></div>
+          <div><span>版本</span><b id="srv-version">—</b></div>
+          <div><span>世界</span><b id="srv-world">—</b></div>
+          <div><span>运行</span><b id="srv-uptime">—</b></div>
+        </div>
+        <p class="small muted" id="srv-players" style="margin-top:10px">—</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="cards">
+    <a class="card" href="./stocks.html"><div class="t">股票行情</div><div class="d">价格 · 涨跌 · 下单</div></a>
+    <a class="card" href="./market.html"><div class="t">物品行情</div><div class="d">成交价 · 涨跌</div></a>
+    <a class="card" href="./play.html"><div class="t">进服指引</div><div class="d">地址 · 版本</div></a>
+    <a class="card" href="./rules.html"><div class="t">玩家规则</div><div class="d">八条</div></a>
+    <a class="card" href="./play.html" data-account-link><div class="t">账号绑定</div><div class="d" data-account-note>暂未开放</div></a>
+  </div>
+
+  <section class="panel" style="margin-top:18px">
+    <div class="panel-body" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px">
+      <span class="muted small">连接地址</span>
+      <span class="addr" id="addr">待开通</span>
+      <button class="btn btn-sm" type="button" id="copy-addr" data-copy="" disabled>未开通</button>
+      <span class="sep">|</span>
+      <span class="muted small">版本</span><b class="mono" id="addr-version">1.21.11</b>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap"><span>OMC World</span><span class="sep">·</span><span>数据来自服务端公开接口</span><span class="sep">·</span><span>© <span data-year>2026</span></span></div></footer>
+<div id="toast-host"></div>
+
 <script src="./config.js" defer></script>
 <script src="./assets/js/util.js" defer></script>
-<script src="./assets/js/mock.js" defer></script>
 <script src="./assets/js/api.js" defer></script>
-<script src="./assets/js/city.js" defer></script>
+<script src="./assets/js/live.js" defer></script>
+<script src="./assets/js/chart.js" defer></script>
 <script src="./assets/js/nav.js" defer></script>
 <script src="./assets/js/home.js" defer></script>
-</head><body>
-<a class="skip" href="#main">跳到主要内容</a>
-<div class="topbar"><div class="wrap">
-  <span>OMC-WORLD · 市政门户 / MUNICIPAL PORTAL</span>
-  <span class="mono"><span id="city-clock">----</span> · <span id="city-phase">—</span></span>
-</div></div>
-<header class="masthead"><div class="wrap">
-  <a class="brand" href="./index.html">
-    <span class="brand-mark">OM</span>
-    <span><span class="brand-name">OMC-World</span><br><span class="brand-sub">Omni Minecraft World</span></span>
-  </a>
-  <nav class="nav" aria-label="主导航">
-    <a href="./index.html" class="active">市政厅</a>
-    <a href="./play.html">城区与职业</a>
-    <a href="./servers.html">交通与线路</a>
-    <a href="./account.html">市民账户</a>
-    <a href="./rules.html">市政条例</a>
-    <a href="./shop.html">市民服务</a>
-    <a href="./connect.html">入城指引</a>
-  </nav>
-  <div class="mast-right">
-    <span class="status-dot" id="api-dot"></span><span id="api-label">检测中</span>
-    <span class="sep"></span>
-    <span id="header-user"><a href="./account.html">登录 / 注册</a></span>
-  </div>
-</div></header>
-<main id="main" class="wrap">
-
-  <section class="city-hero">
-    <div class="kicker">EST. 2026 · 常驻现代生存 · Minecraft 1.21</div>
-    <h1>OMC-World 市政门户</h1>
-    <p class="lede">一座持续运转的城市：四个城区、六币种经济、按线路调度的服务器群。登录服是唯一城门，进城后由调度系统把你送往对应城区。</p>
-    <div class="hero-meta">
-      <span>入城地址</span>
-      <span class="addr" id="hero-host">play.omc-world.example:25565</span>
-      <button class="btn btn-sm" type="button" id="copy-ip">复制地址</button>
-      <span class="sep"></span>
-      <span>时区 UTC+8 · 昼夜与现实同步</span>
-      <span class="sep"></span>
-      <span id="home-source" class="badge badge-warn">离线演示</span>
-      <span id="home-updated" class="dim">更新于 —</span>
-    </div>
-  </section>
-
-  <section class="board" aria-label="城市实时数据">
-    <div class="board-cell"><div class="board-label">在线市民</div><div class="board-value" id="stat-online">0</div><div class="board-note">全服同时在线</div></div>
-    <div class="board-cell"><div class="board-label">运行服务器</div><div class="board-value" id="stat-servers">0 / 0</div><div class="board-note">状态为在线的实例</div></div>
-    <div class="board-cell"><div class="board-label">游戏区实例</div><div class="board-value" id="stat-games">0</div><div class="board-note">3–1024 号实例池</div></div>
-    <div class="board-cell"><div class="board-label">平均 TPS</div><div class="board-value" id="stat-tps">—</div><div class="board-note">20.0 为满帧</div></div>
-  </section>
-
-  <div class="grid-2">
-    <div>
-      <section class="panel">
-        <div class="panel-head"><span><span class="idx">01</span> 市政公告栏</span><span>BULLETIN</span></div>
-        <ol class="bulletin">
-          <li><time>11-08</time><span class="tag">维护</span><p>工业区 B 段红石管网检修，22:00–02:00 大型机器暂停运转。</p></li>
-          <li><time>11-06</time><span class="tag">土地</span><p>商业区中央车站东侧 12 块临街地皮开拍，起拍价 8,000 金币。</p></li>
-          <li><time>11-03</time><span class="tag">立法</span><p>市政厅通过《§4 地皮与建筑条例》修订：主城建筑限高 96 格。</p></li>
-          <li><time>10-30</time><span class="tag">交通</span><p>游戏区新增 4 条支线，晚高峰 20:00–23:00 加开实例。</p></li>
-          <li><time>10-28</time><span class="tag">经济</span><p>六币种汇率牌上线，点数与金币固定 1:100 结算。</p></li>
-        </ol>
-        <div class="panel-foot"><span>公告由市政厅发布，仅列最近 5 条</span><a href="./rules.html">条例全文 →</a></div>
-      </section>
-
-      <section class="panel" style="margin-top:18px">
-        <div class="panel-head"><span><span class="idx">02</span> 四个城区</span><span>DISTRICTS</span></div>
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead><tr><th>城区</th><th>职能</th><th>地价（金币 / 格）</th><th>状态</th></tr></thead>
-            <tbody>
-              <tr><td><b>商业区</b> CBD</td><td>商铺、公司注册、拍卖行、银行</td><td class="num">12,000 临街 · 6,000 内街</td><td><span class="badge badge-ok">招商中</span></td></tr>
-              <tr><td><b>住宅区</b></td><td>公寓、别墅、<code>/home</code> 传送点</td><td class="num">4,000</td><td><span class="badge badge-ok">有余量</span></td></tr>
-              <tr><td><b>工业区</b></td><td>农场、红石工厂、仓储、货运站</td><td class="num">1,500</td><td><span class="badge badge-warn">需环评</span></td></tr>
-              <tr><td><b>公共区</b></td><td>市政厅、医院、警局、车站、公园</td><td class="num">不可交易</td><td><span class="badge badge-mute">市政直管</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel-foot"><span>地价随供需浮动，每周一更新</span><a href="./play.html">城区详情 →</a></div>
-      </section>
-    </div>
-
-    <aside>
-      <section class="panel">
-        <div class="panel-head"><span><span class="idx">03</span> 线路图</span><span>TRANSIT</span></div>
-        <ol class="rail">
-          <li class="stop"><div class="stop-head"><b>L1 登录线</b><span class="mono">25565</span></div><p>唯一城门。认证、注册、二次验证，完成后自动调度进城。</p></li>
-          <li class="stop"><div class="stop-head"><b>L2 主城线</b><span class="mono">25566</span></div><p>经济、地皮、公司、持久化存档。</p></li>
-          <li class="stop"><div class="stop-head"><b>L3–L1024 游戏区</b><span class="mono">25567–26588</span></div><p>按需启停的实例池，空服 5 分钟回收。</p></li>
-          <li class="stop"><div class="stop-head"><b>M1–M6 镜像区</b><span class="mono">26589–26594</span></div><p>只读分流，供直播与观战，不写入存档。</p></li>
-        </ol>
-        <div class="panel-foot"><span>仅 25565 对公网开放</span><a href="./servers.html">实时线路 →</a></div>
-      </section>
-
-      <section class="panel" style="margin-top:18px">
-        <div class="panel-head"><span><span class="idx">04</span> 汇率牌</span><span>EXCHANGE</span></div>
-        <div class="tbl-wrap">
-          <table class="tbl rates">
-            <thead><tr><th>币种</th><th class="num">兑点数</th><th>备注</th></tr></thead>
-            <tbody>
-              <tr><td><span class="coin"><span class="coin-swatch sw-netherite"></span>下界合金</span></td><td class="rate base">10,000,000,000</td><td class="dim">硬通货</td></tr>
-              <tr><td><span class="coin"><span class="coin-swatch sw-diamond"></span>钻石</span></td><td class="rate">100,000,000</td><td class="dim">1 块 = 100 钻石</td></tr>
-              <tr><td><span class="coin"><span class="coin-swatch sw-emerald"></span>绿宝石</span></td><td class="rate">1,000,000</td><td class="dim">村民贸易</td></tr>
-              <tr><td><span class="coin"><span class="coin-swatch sw-amethyst"></span>紫水晶</span></td><td class="rate">10,000</td><td class="dim">精密制造</td></tr>
-              <tr><td><span class="coin"><span class="coin-swatch sw-gold"></span>金币</span></td><td class="rate">100</td><td class="dim">日常结算</td></tr>
-              <tr><td><span class="coin"><span class="coin-swatch sw-point"></span>点数</span></td><td class="rate">1</td><td class="dim">市政记账单位</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel-foot"><span>牌价由市政银行每小时刷新</span><a href="./shop.html">兑换与地皮 →</a></div>
-      </section>
-
-      <section class="panel" style="margin-top:18px">
-        <div class="panel-head"><span><span class="idx">05</span> 市政服务</span><span>SERVICES</span></div>
-        <ul class="bulletin">
-          <li><time>01</time><span class="tag">土地</span><p><a href="./play.html#land">地皮申请与过户</a> · 需市民账户与 2FA</p></li>
-          <li><time>02</time><span class="tag">工商</span><p><a href="./play.html#company">公司注册</a> · 50,000 金币 + 2 名担保人</p></li>
-          <li><time>03</time><span class="tag">身份</span><p><a href="./account.html">账户、二次验证、绑定游戏账号</a></p></li>
-          <li><time>04</time><span class="tag">仲裁</span><p><a href="./rules.html#appeal">纠纷申诉</a> · 48 小时内受理</p></li>
-        </ul>
-      </section>
-    </aside>
-  </div>
-
-  <section class="section">
-    <div class="section-head"><h2>此刻在线 · 热门服务器</h2><span class="meta">数据源 GET /api/status · 30 秒轮询</span></div>
-    <div class="panel"><div class="panel-body tight"><div id="home-server-list"><div class="empty">正在读取城市状态…</div></div></div>
-      <div class="panel-foot"><span>按在线人数排序，最多显示 3 台</span><a href="./servers.html">全部服务器 →</a></div>
-    </div>
-  </section>
-
-  <section class="section" id="jobs">
-    <div class="section-head"><h2>职业与公司</h2><span class="meta">市政劳动局 · 每周更新</span></div>
-    <div class="grid-2">
-      <div class="panel">
-        <div class="panel-head"><span>职业招募</span><span>JOBS</span></div>
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead><tr><th>职业</th><th>职责</th><th>名额</th><th class="num">周薪</th></tr></thead>
-            <tbody>
-              <tr><td>警察</td><td>治安巡逻、盗窃与 PvP 纠纷处置</td><td>12</td><td class="num">8,000</td></tr>
-              <tr><td>医生</td><td>医院值班、复活点治疗</td><td>6</td><td class="num">7,000</td></tr>
-              <tr><td>司机</td><td>公交与货运线路驾驶</td><td>20</td><td class="num">5,500</td></tr>
-              <tr><td>商人</td><td>店铺经营、拍卖行挂单</td><td>自由执业</td><td class="num">—</td></tr>
-              <tr><td>建筑师</td><td>公共工程投标、地皮设计</td><td>资质认证</td><td class="num">按项目</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel-foot"><span>上岗需通过对应考核</span><a href="./play.html#jobs">考核说明 →</a></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><span>公司与房产</span><span>REGISTRY</span></div>
-        <div class="panel-body">
-          <p><b>公司注册</b>：50,000 金币，需 2 名市民担保，可挂招牌、雇工、开分店。</p>
-          <p><b>房产</b>：公寓可租可买；别墅仅限住宅区；商铺仅限商业区临街。地皮与建筑须符合《§4 条例》。</p>
-          <p class="dim">现有注册公司 37 家 · 在售地皮 214 块 · 待审建筑 9 份</p>
-          <a class="btn btn-sm" href="./account.html">用市民账户办理</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-</main>
-<footer class="footer">
-  <div class="wrap">
-    <div>
-      <div class="brand-name">OMC-World</div>
-      <p class="dim">Omni Minecraft World · 玩家自治的现代生存城市。本站为城市门户，不提供客户端下载。与 Mojang Studios / Microsoft 无隶属关系。</p>
-    </div>
-    <div><h4>城市</h4><ul>
-      <li><a href="./play.html">四个城区</a></li>
-      <li><a href="./play.html#jobs">职业与公司</a></li>
-      <li><a href="./servers.html">线路与端口</a></li>
-      <li><a href="./rules.html">市政条例</a></li>
-    </ul></div>
-    <div><h4>市民服务</h4><ul>
-      <li><a href="./account.html">账户与二次验证</a></li>
-      <li><a href="./account.html#link">绑定游戏账号</a></li>
-      <li><a href="./shop.html">点数与地皮</a></li>
-      <li><a href="./connect.html">入城指引</a></li>
-    </ul></div>
-    <div><h4>市政</h4><ul>
-      <li><a href="./rules.html#appeal">申诉与仲裁</a></li>
-      <li><a href="./connect.html#status">服务状态</a></li>
-      <li><a href="./connect.html#api">API 契约</a></li>
-      <li><a href="./404.html">页面不存在</a></li>
-    </ul></div>
-  </div>
-  <div class="fine"><div class="wrap">
-    <span>© <span data-year>2026</span> OMC-World 市政厅 · 内容按 CC BY-NC-SA 4.0 授权</span>
-    <span class="mono">build 0.31.0 · static</span>
-  </div></div>
-</footer>
 </body>
 </html>
