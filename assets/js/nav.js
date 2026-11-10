@@ -1,49 +1,44 @@
-/* MC-World 全站导航：API 状态灯、登录态、标签页与复制按钮 */
+/* OMC World 导航、页脚与账号入口（零依赖） */
 (function () {
   'use strict';
   var MCW = window.MCW || (window.MCW = {});
 
-  function paintMode(result) {
-    var dot = document.getElementById('api-dot');
-    var label = document.getElementById('api-label');
-    if (!dot || !label) return;
-    var m = result && result.mode ? result.mode : MCW.api.mode();
-    dot.className = 'status-dot ' + (m === 'live' ? 'on' : (m === 'offline' ? 'off' : 'demo'));
-    label.textContent = m === 'live' ? '服务在线' : (m === 'offline' ? '离线演示' : '演示模式');
-    label.title = m === 'live'
-      ? '已连接 Worker API：' + MCW.api.base()
-      : (m === 'offline' ? 'API 不可达，当前使用内置演示数据' : '未配置 API 地址，当前使用内置演示数据');
+  function paintNav() {
+    var path = String(window.location.pathname || '');
+    var file = path.split('/').pop() || 'index.html';
+    MCW.qsa('.nav a').forEach(function (a) {
+      var href = (a.getAttribute('href') || '').replace(/^\.\//, '');
+      if (href === file || (file === '' && href === 'index.html')) a.classList.add('active');
+    });
   }
 
-  function paintUser() {
-    var el = document.getElementById('header-user');
-    if (!el) return;
-    var user = MCW.api.getUser();
-    if (!user) {
-      el.innerHTML = '<a href="./account.html">登录 / 注册</a>';
-    } else {
-      var demo = MCW.api.isDemoSession();
-      el.innerHTML = '你好，<b>' + MCW.esc(user) + '</b>' + (demo ? ' <span class="badge badge-warn">演示</span>' : '');
-    }
+  function paintAccount() {
+    var els = MCW.qsa('[data-account-link]');
+    if (!els.length) return;
+    var url = MCW.api.accountUrl();
+    els.forEach(function (el) {
+      if (!url) {
+        el.classList.add('is-off');
+        el.setAttribute('aria-disabled', 'true');
+        el.removeAttribute('href');
+        el.setAttribute('title', '暂未开放');
+        var note = el.querySelector('[data-account-note]');
+        if (note) note.textContent = '暂未开放';
+        return;
+      }
+      el.setAttribute('href', url);
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener');
+      var n2 = el.querySelector('[data-account-note]');
+      if (n2) n2.textContent = '';
+    });
   }
 
   MCW.ready(function () {
-    MCW.initTabs(document);
     MCW.initCopy();
-    paintUser();
-    paintMode(null);
-
-    var path = window.location.pathname;
-    MCW.qsa('.nav a').forEach(function (a) {
-      var href = a.getAttribute('href') || '';
-      var file = href.replace(/^\.\//, '');
-      if (file && path.indexOf(file) !== -1) a.classList.add('active');
-    });
-
-    if (MCW.api.mode() === 'live') {
-      MCW.api.getStatus().then(paintMode).catch(function () {
-        paintMode({ mode: 'offline' });
-      });
-    }
+    paintNav();
+    paintAccount();
+    var years = MCW.qsa('[data-year]');
+    for (var i = 0; i < years.length; i++) years[i].textContent = String(new Date().getFullYear());
   });
 })();
