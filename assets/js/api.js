@@ -1,169 +1,103 @@
-/* MC-World API 客户端：零依赖、超时可控、失败自动降级 mock */
+/* OMC World 数据接口（零依赖，只读公开接口 + 交易） */
 (function () {
   'use strict';
   var MCW = window.MCW || (window.MCW = {});
-  var DEFAULT_BASE = 'https://mc-world-api.<account>.workers.dev';
-  var TIMEOUT = 5000;
+  var CFG = window.MCW_CONFIG || {};
+  var API_KEY = 'omc_api';
+  var TIMEOUT = 8000;
 
-  function readOverride() {
-    var fromQuery = '';
-    try {
-      var p = new URLSearchParams(window.location.search);
-      fromQuery = (p.get('api') || '').trim();
-    } catch (e) { fromQuery = ''; }
-    if (fromQuery) {
-      try { sessionStorage.setItem('mcw_api', fromQuery); } catch (e2) {}
-      return fromQuery;
+  function normalizeBase(v) {
+    var s = String(v || '').trim();
+    if (!s) return '';
+    if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+    return s.replace(/\/+$/, '');
+  }
+
+  function base() {
+    var q = MCW.params ? MCW.params().api : '';
+    if (q) {
+      try { sessionStorage.setItem(API_KEY, q); } catch (e) {}
     }
-    try { return (sessionStorage.getItem('mcw_api') || '').trim(); } catch (e3) { return ''; }
+    var stored = '';
+    try { stored = sessionStorage.getItem(API_KEY) || ''; } catch (e) {}
+    return normalizeBase(stored || CFG.api || '');
   }
-
-  function usable(base) {
-    if (!base) return false;
-    if (/[<>]/.test(base)) return false;              // 仍是占位符
-    if (/example\.com|example\.dev/i.test(base)) return false;
-    return /^https?:\/\/[^\s]+$/i.test(base);
-  }
-
-  var configured = (window.MCWORLD_API || DEFAULT_BASE).trim();
-  var override = readOverride();
-  var base = usable(override) ? override : (usable(configured) ? configured : '');
-  var mode = base ? 'live' : 'demo';
 
   function request(path, opts) {
     opts = opts || {};
-    if (!base) {
-      return Promise.resolve({ ok: false, mode: 'demo', error: '未配置 API 地址（演示模式）' });
+    var b = base();
+    if (!b) {
+      var e0 = new Error('服务端未连接');
+      e0.code = 'NOT_CONNECTED';
+      return Promise.reject(e0);
     }
-    var url = base.replace(/\/+$/, '') + path;
-    var ctrl = null;
-    try { ctrl = new AbortController(); } catch (e) { ctrl = null; }
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, opts.timeout || TIMEOUT);
-    var init = {
-      method: opts.method || 'GET',
-      headers: { 'Accept': 'application/json' },
-      cache: 'no-store',
-      credentials: 'omit'
-    };
-    if (opts.body) {
-      init.headers['Content-Type'] = 'application/json';
-      init.body = JSON.stringify(opts.body);
-    }
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT) : null;
+    var headers = { Accept: 'application/json' };
+    if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+    var init = { method: opts.method || 'GET', headers: headers, cache: 'no-store' };
     if (ctrl) init.signal = ctrl.signal;
+    if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
 
-    return fetch(url, init).then(function (res) {
+    return fetch(b + path, init).then(function (res) {
       return res.text().then(function (text) {
-        clearTimeout(timer);
         var data = null;
         try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
         if (!res.ok) {
-          return { ok: false, mode: 'offline', status: res.status, data: data, error: 'HTTP ' + res.status };
+          var info = (data && (data.error || data)) || {};
+          var err = new Error(info.message || info.error || ('请求失败（HTTP ' + res.status + '）'));
+          err.code = info.code || ('HTTP_' + res.status);
+          err.status = res.status;
+          throw err;
         }
-        return { ok: true, mode: 'live', status: res.status, data: data };
+        if (data && data.ok === false) {
+          var info2 = data.error || {};
+          var err2 = new Error(info2.message || info2.error || '请求失败');
+          err2.code = info2.code || 'API_ERROR';
+          throw err2;
+        }
+        return data;
       });
-    }).catch(function (err) {
-      clearTimeout(timer);
-      var msg = (err && err.name === 'AbortError') ? '请求超时' : '网络不可达';
-      return { ok: false, mode: 'offline', status: 0, data: null, error: msg };
-    });
-  }
-
-  function fallbackMode() { return mode === 'demo' ? 'demo' : 'offline'; }
-
-  function getStatus() {
-    return request('/api/status').then(function (r) {
-      var d = r.data;
-      if (r.ok && d && d.ok !== false && Array.isArray(d.servers)) {
-        return { ok: true, mode: 'live', servers: d.servers, updatedAt: d.updatedAt || new Date().toISOString(), source: 'live' };
+    }).then(function (data) {
+      if (timer) clearTimeout(timer);
+      return data;
+    }, function (err) {
+      if (timer) clearTimeout(timer);
+      if (err && err.name === 'AbortError') {
+        var e = new Error('请求超时');
+        e.code = 'TIMEOUT';
+        throw e;
       }
-      var m = MCW.mock.status();
-      return { ok: false, mode: fallbackMode(), servers: m.servers, updatedAt: m.updatedAt, source: 'mock', error: r.error || '接口返回异常' };
+      if (!err.code) err.code = 'NETWORK';
+      throw err;
     });
   }
 
-  function getServers() {
-    return request('/api/servers').then(function (r) {
-      var d = r.data;
-      if (r.ok && d && d.ok !== false && Array.isArray(d.servers)) {
-        return { ok: true, mode: 'live', servers: d.servers, source: 'live' };
-      }
-      var m = MCW.mock.servers();
-      return { ok: false, mode: fallbackMode(), servers: m.servers, source: 'mock', error: r.error || '接口返回异常' };
-    });
-  }
-
-  function auth(kind, username, password) {
-    var path = kind === 'register' ? '/api/auth/register' : '/api/auth/login';
-    if (!base) {
-      return Promise.resolve({ ok: true, mode: 'demo', demo: true, token: 'demo.' + btoa(unescape(encodeURIComponent(username))), error: '' });
-    }
-    return request(path, { method: 'POST', body: { username: username, password: password } }).then(function (r) {
-      var d = r.data || {};
-      if (r.ok && d.ok === true && d.token) {
-        return { ok: true, mode: 'live', token: d.token, error: '' };
-      }
-      return {
-        ok: false,
-        mode: r.mode,
-        error: d.error || r.error || '服务暂时不可用，请稍后再试'
-      };
-    });
-  }
-
-  function redirect(player) {
-    return request('/api/redirect?player=' + encodeURIComponent(player || '')).then(function (r) {
-      if (r.ok && r.data && r.data.ok === true && r.data.server) {
-        return { ok: true, mode: 'live', server: r.data.server };
-      }
-      return { ok: false, mode: r.mode, error: (r.data && r.data.error) || r.error || '分配失败' };
-    });
-  }
-
-  function getToken() {
-    try { return localStorage.getItem('mcw_token') || ''; } catch (e) { return ''; }
-  }
-
-  function getUser() {
-    try { return localStorage.getItem('mcw_user') || ''; } catch (e) { return ''; }
-  }
-
-  function isDemoSession() {
-    return getToken().indexOf('demo.') === 0;
-  }
-
-  function setSession(token, username) {
-    try {
-      localStorage.setItem('mcw_token', token || '');
-      localStorage.setItem('mcw_user', username || '');
-    } catch (e) {}
-  }
-
-  function clearSession() {
-    try {
-      localStorage.removeItem('mcw_token');
-      localStorage.removeItem('mcw_user');
-    } catch (e) {}
-  }
+  function get(path) { return request(path); }
+  function post(path, body) { return request(path, { method: 'POST', body: body || {} }); }
 
   MCW.api = {
-    getStatus: getStatus,
-    getServers: getServers,
-    register: function (u, p) { return auth('register', u, p); },
-    login: function (u, p) { return auth('login', u, p); },
-    redirect: redirect,
-    getToken: getToken,
-    getUser: getUser,
-    isDemoSession: isDemoSession,
-    setSession: setSession,
-    clearSession: clearSession,
-    mode: function () { return mode; },
-    base: function () { return base; },
+    base: base,
+    request: request,
+    get: get,
+    post: post,
+    connected: function () { return !!base(); },
+    accountUrl: function () { return String(CFG.accountUrl || ''); },
+    health: function () { return get('/api/health'); },
+    status: function () { return get('/api/status'); },
+    market: function () { return get('/api/market'); },
+    stocks: function () { return get('/api/stocks'); },
+    stock: function (symbol) { return get('/api/stocks/' + encodeURIComponent(symbol)); },
+    trade: function (body) { return post('/api/stocks/trade', body); },
+    plots: function () { return get('/api/plots'); },
     contract: [
-      { method: 'GET', path: '/api/status', req: '—', res: '{ok, servers:[{id,role,name,online,max,players,tps,latency,status}], updatedAt}' },
-      { method: 'GET', path: '/api/servers', req: '—', res: '{ok, servers:[{id,role,port,host,name,desc}]}' },
-      { method: 'POST', path: '/api/auth/register', req: '{username,password}', res: '{ok:true,token} | {ok:false,error}' },
-      { method: 'POST', path: '/api/auth/login', req: '{username,password}', res: '{ok:true,token} | {ok:false,error}' },
-      { method: 'GET', path: '/api/redirect?player=x', req: '—', res: '{ok:true,server:{id,host,port}}' }
+      'GET /api/health',
+      'GET /api/status',
+      'GET /api/market',
+      'GET /api/stocks',
+      'GET /api/stocks/<symbol>',
+      'POST /api/stocks/trade',
+      'GET /api/plots'
     ]
   };
 })();
