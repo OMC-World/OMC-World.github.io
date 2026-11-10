@@ -184,3 +184,14 @@ label.f{display:block;margin-bottom:6px;color:var(--muted);font-size:12px}
   .src{margin-left:0;width:100%}
   .kv{grid-template-columns:1fr}
 }
+/* 账号 / 绑定 / 订单 */
+.form-row{display:flex;flex-wrap:wrap;gap:0 14px}
+.form-row .field{flex:1 1 180px;margin-bottom:10px}
+.code-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:12px}
+.bigcode{font:600 28px/1.2 var(--mono);letter-spacing:.28em;color:var(--accent);
+  padding:6px 12px 6px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.panel-head .btn{margin-left:auto}
+@media (max-width:640px){
+  .form-row .field{flex:1 1 100%}
+  .bigcode{font-size:24px}
+}
