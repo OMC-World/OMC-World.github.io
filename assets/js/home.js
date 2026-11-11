@@ -3,8 +3,7 @@
   'use strict';
   var MCW = window.MCW || (window.MCW = {});
   var CFG = window.MCW_CONFIG || {};
-  /* 公网地址由 /api/link/start 返回；首页没有会话，不主动生成绑定码，默认显示待开通 */
-  var VER = CFG.version || '1.21.11';
+  /* 公网地址由 address.js 从 /api/status 自愈；首页不生成绑定码 */
   var SAMPLES = 'omc_online_samples';
   var MAX_POINTS = 180;
   var samples = load();
@@ -23,6 +22,10 @@
   function text(id, v) {
     var el = document.getElementById(id);
     if (el) el.textContent = v;
+  }
+
+  function refreshServerAddress() {
+    return MCW.address.refresh('/api/status', 'serverAddress');
   }
 
   function uptime(sec) {
@@ -54,7 +57,7 @@
     text('stat-online', d.online !== undefined && d.online !== null ? MCW.fmtInt(d.online) : '—');
     text('stat-max', d.max !== undefined && d.max !== null ? '/ ' + MCW.fmtInt(d.max) : '');
     text('stat-tps', d.tps !== undefined && d.tps !== null ? Number(d.tps).toFixed(1) : '—');
-    text('stat-version', d.version || VER);
+    text('stat-version', d.version || '—');
 
     var dot = document.getElementById('src-dot');
     if (dot) dot.className = 'dot ' + MCW.live.stateClass(p.state);
@@ -95,12 +98,7 @@
   }
 
   MCW.ready(function () {
-    var addr = document.getElementById('addr');
-    var cp = document.getElementById('copy-addr');
-    if (addr) addr.textContent = '待开通';
-    if (cp) { cp.setAttribute('data-copy', ''); cp.disabled = true; cp.textContent = '未开通'; }
-    text('addr-version', VER);
-    text('stat-version', VER);
+    MCW.address.start(refreshServerAddress);
 
     renderChart();
 
