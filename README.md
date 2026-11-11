@@ -18,6 +18,7 @@
 ## 数据来源
 
 所有数字来自服务端公开接口，页面每 5 秒轮询；断线时保留最后一次成功数据并标注断线时间。
+公网连接地址由 `address.js` 首屏请求 `/api/status` 的 `serverAddress` 并每 15 秒自愈；登录后 `/api/link/start` 返回的地址优先覆盖。
 接口未配置或不可达时显示「服务端未连接」，不做任何本地兜底数据。
 
 `config.js`：
@@ -25,9 +26,8 @@
 ```js
 window.MCW_CONFIG = {
   api: "",            // 服务端基址，例如 https://api.example.com；留空 = 未连接
-  host: "play.omc-world.example",
   port: 25565,
-  version: "1.21.11",
+  version: "1.21.11 ~ 26.3", // 连接块展示的最低版本；具体版本号取自 /api/status
   accountUrl: "",     // 账号绑定页；留空 = 按钮显示「暂未开放」
   pollMs: 5000
 };
@@ -40,7 +40,7 @@ window.MCW_CONFIG = {
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | `/api/health` | `{ok, ts, version}` |
-| GET | `/api/status` | `{ok, ts, motd, version, online, max, players[], tps, uptimeSec, world{name,day}}` |
+| GET | `/api/status` | `{ok, ts, motd, version, online, max, players[], tps, uptimeSec, world{name,day}, serverAddress}` |
 | GET | `/api/market` | `{ok, ts, items[{id,name,price,change24h,volume,buyers,sellers,history[{t,p}]}]}` |
 | GET | `/api/stocks` | `{ok, ts, stocks[{symbol,name,sector,price,change24h,volume,marketCap,history,holders}]}` |
 | GET | `/api/stocks/<symbol>` | 单只股票 + `depth{bids,asks}`（页面不使用深度） |
@@ -63,7 +63,7 @@ node tools/serve.js 8080
 node tools/check.js
 ```
 
-覆盖：必需文件、真实 HTTP 200/404、资源引用与零外链、JS 语法、UTF-8 无 BOM、禁用词与系统弹窗、接口契约锚点、vm 运行时（stub fetch 下折线 path、下单校验、断线保留旧数据）。全部通过时输出 `RESULT pass=N fail=0`。
+覆盖：必需文件、真实 HTTP 200/404、资源引用与零外链、JS 语法、UTF-8 无 BOM、禁用词与系统弹窗、接口契约锚点、vm 运行时（stub fetch 下折线 path、下单校验、断线保留旧数据、`/api/status` 地址与版本渲染）。全部通过时输出 `RESULT pass=N fail=0`。
 
 ## 部署
 
