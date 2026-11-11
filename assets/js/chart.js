@@ -46,6 +46,43 @@
     return Math.max(1, Math.round((vv / mm) * hh));
   }
 
+  /* 统一 y 轴范围：全等序列固定 0..max(1,max)，非负数据不出现负刻度 */
+  function rangeOf(series) {
+    var min = Infinity, max = -Infinity;
+    for (var i = 0; i < series.length; i++) {
+      if (series[i].p < min) min = series[i].p;
+      if (series[i].p > max) max = series[i].p;
+    }
+    if (!isFinite(min) || !isFinite(max)) return { min: 0, max: 1, equal: true };
+    var equal = min === max;
+    if (equal) {
+      min = 0;
+      max = Math.max(1, max);
+    } else {
+      var pad = (max - min) * 0.08;
+      min -= pad;
+      max += pad;
+      if (min < 0) min = 0;
+    }
+    if (max <= min) max = min + 1;
+    return { min: min, max: max, equal: equal };
+  }
+
+  /* 全等序列用整数刻度；其余保持 5 条网格线 */
+  function axisTicks(L) {
+    if (L.equal) {
+      var n = Math.round(L.max);
+      if (n >= 1 && n <= 5) {
+        var ints = [];
+        for (var k = 0; k <= n; k++) ints.push(k);
+        return ints;
+      }
+    }
+    var ticks = [];
+    for (var j = 0; j <= 4; j++) ticks.push(L.max - ((L.max - L.min) / 4) * j);
+    return ticks;
+  }
+
   /* 价格区 + 底部成交量区的共用布局；v 全为 0 时不画柱子，保持原折线布局 */
   function layoutOf(w, h, opts, series, allowVolume) {
     var padL = 54, padR = 16, padT = 16, padB = 26;
@@ -76,14 +113,8 @@
     var L = layoutOf(w, h, opts, series, rawLen >= 2);
     var padL = L.padL, padR = L.padR, padT = L.padT;
     var iw = L.iw, ih = L.ih;
-    var min = Infinity, max = -Infinity, i;
-    for (i = 0; i < series.length; i++) {
-      if (series[i].p < min) min = series[i].p;
-      if (series[i].p > max) max = series[i].p;
-    }
-    if (min === max) { min = min - 1; max = max + 1; }
-    var pad = (max - min) * 0.08;
-    min -= pad; max += pad;
+    var R = rangeOf(series);
+    var min = R.min, max = R.max, i;
 
     function x(i2) { return padL + (series.length === 1 ? iw / 2 : (i2 / (series.length - 1)) * iw); }
     function y(v) { return padT + ih - ((v - min) / (max - min)) * ih; }
@@ -92,9 +123,10 @@
     var out = [];
     out.push('<svg class="chart-svg" width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(opts.label || '趋势图') + '">');
 
-    for (i = 0; i <= 4; i++) {
-      var gy = padT + (ih / 4) * i;
-      var gv = max - ((max - min) / 4) * i;
+    var ticks = axisTicks(R);
+    for (i = 0; i < ticks.length; i++) {
+      var gv = ticks[i];
+      var gy = y(gv);
       out.push('<line class="grid" x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + gy.toFixed(1) + '" stroke="' + COLOR.grid + '" stroke-width="1"/>');
       out.push('<text class="axis-y" x="' + (padL - 8) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end" fill="' + COLOR.text + '" font-size="10">' + esc(fmtAxis(gv, opts)) + '</text>');
     }
@@ -152,14 +184,8 @@
     var h = Number(svg.getAttribute('viewBox').split(' ')[3]);
     var L = layoutOf(w, h, opts, series, series.length >= 2);
     var padL = L.padL, padT = L.padT, iw = L.iw, ih = L.ih;
-    var min = Infinity, max = -Infinity, i;
-    for (i = 0; i < series.length; i++) {
-      if (series[i].p < min) min = series[i].p;
-      if (series[i].p > max) max = series[i].p;
-    }
-    if (min === max) { min -= 1; max += 1; }
-    var pad = (max - min) * 0.08;
-    min -= pad; max += pad;
+    var R = rangeOf(series);
+    var min = R.min, max = R.max;
 
     var group = svg.querySelector('.chart-hover');
     var line = svg.querySelector('.hover-line');
