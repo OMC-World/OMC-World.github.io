@@ -30,11 +30,39 @@
     return String(Math.round(v * 1000) / 1000);
   }
 
+  function pad2(x) { return (x < 10 ? '0' : '') + x; }
+
   function hm(ts) {
     var d = new Date(ts);
     if (isNaN(d.getTime())) return '—';
-    function p(x) { return (x < 10 ? '0' : '') + x; }
-    return p(d.getHours()) + ':' + p(d.getMinutes());
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function dayKey(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  /* 跨本地日期或跨度超过 24 小时时，x 轴需要带日期，避免 19:23 / 17:49 混排 */
+  function hasDateSpan(series) {
+    if (!series || series.length < 2) return false;
+    var a = series[0].t, b = series[series.length - 1].t;
+    if (!isFinite(a) || !isFinite(b)) return false;
+    if (Math.abs(b - a) > 86400000) return true;
+    return dayKey(a) !== dayKey(b);
+  }
+
+  function mdhm(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    return pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' + hm(ts);
+  }
+
+  function fullTime(ts) {
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' + hm(ts);
   }
 
   function esc(v) { return MCW.esc ? MCW.esc(v) : String(v); }
@@ -132,11 +160,13 @@
     }
 
     var labels = [0, Math.floor((series.length - 1) / 2), series.length - 1];
+    var showDate = hasDateSpan(series);
     labels.forEach(function (idx, k) {
       if (k === 1 && series.length < 3) return;
       var lx = x(idx);
       var anchor = k === 0 ? 'start' : (k === 2 ? 'end' : 'middle');
-      out.push('<text class="axis-x" x="' + lx.toFixed(1) + '" y="' + (h - 6) + '" text-anchor="' + anchor + '" fill="' + COLOR.text + '" font-size="10">' + esc(hm(series[idx].t)) + '</text>');
+      var label = showDate && (k === 0 || k === 2) ? mdhm(series[idx].t) : hm(series[idx].t);
+      out.push('<text class="axis-x" x="' + lx.toFixed(1) + '" y="' + (h - 6) + '" text-anchor="' + anchor + '" fill="' + COLOR.text + '" font-size="10">' + esc(label) + '</text>');
     });
 
     var d = '';
@@ -205,7 +235,7 @@
       line.setAttribute('x2', sx.toFixed(1));
       dot.setAttribute('cx', sx.toFixed(1));
       dot.setAttribute('cy', sy.toFixed(1));
-      text.textContent = hm(series[idx].t) + '  ' + (opts && typeof opts.fmt === 'function' ? opts.fmt(series[idx].p) : fmtAxis(series[idx].p, opts));
+      text.textContent = fullTime(series[idx].t) + '  ' + (opts && typeof opts.fmt === 'function' ? opts.fmt(series[idx].p) : fmtAxis(series[idx].p, opts));
       var flip = sx > w * 0.72;
       text.setAttribute('x', (sx + (flip ? -8 : 8)).toFixed(1));
       text.setAttribute('y', Math.max(12, sy - 8).toFixed(1));
@@ -287,5 +317,6 @@
     el.innerHTML = out.join('');
   }
 
-  MCW.chart = { line: render, lineSVG: lineSVG, spark: spark, bars: bars, series: seriesOf, volumeHeight: volumeHeight };
+  MCW.chart = { line: render, lineSVG: lineSVG, spark: spark, bars: bars, series: seriesOf, volumeHeight: volumeHeight,
+    hm: hm, mdhm: mdhm, fullTime: fullTime, hasDateSpan: hasDateSpan };
 })();
