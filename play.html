@@ -6,7 +6,7 @@
 <title>OMC World · 进入服务器 / 账号</title>
 <meta name="description" content="OMC World 连接地址、账号登录、Minecraft 绑定与订单。">
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./assets/css/style.css?v=20261111b">
+<link rel="stylesheet" href="./assets/css/style.css?v=20261111d">
 </head>
 <body>
 <header class="topbar">
@@ -46,7 +46,7 @@
       <p class="notice hidden" id="acc-offline" style="margin-bottom:12px">服务端未连接，账号功能暂不可用。
         <button class="btn btn-sm" id="acc-retry" type="button">重试</button></p>
       <div id="acc-guest">
-        <div class="seg" role="tablist">
+        <div class="seg" id="auth-tabs" role="tablist">
           <button type="button" data-auth-tab="login" aria-pressed="true">登录</button>
           <button type="button" data-auth-tab="register" aria-pressed="false">注册</button>
         </div>
@@ -70,12 +70,67 @@
           </div>
           <button class="btn btn-primary btn-sm" id="register-btn" type="submit">注册</button>
         </form>
+        <form id="login-2fa-form" class="hidden" autocomplete="on">
+          <p class="small muted" style="margin:0 0 8px">该账号已开启两步验证。请输入验证器 App 的 6 位验证码，或一枚恢复码。</p>
+          <div class="field"><label class="f" for="login-2fa-code">6 位验证码或恢复码</label>
+            <input class="input" id="login-2fa-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456 或 XXXX-XXXX" required></div>
+          <p style="margin-top:10px"><button class="btn btn-primary btn-sm" id="login-2fa-btn" type="submit">验证并登录</button>
+            <button class="btn btn-sm" id="login-2fa-back" type="button">返回登录</button></p>
+        </form>
         <p class="msg" id="acc-msg" role="status"></p>
       </div>
       <div id="acc-user" class="hidden">
         <div class="kv kv-1">
           <div><span>邮箱</span><b id="acc-name">—</b></div>
           <div><span>Minecraft</span><b id="acc-mc">未绑定</b></div>
+          <div><span>两步验证</span><b id="tfa-status">未开启</b></div>
+        </div>
+        <div id="tfa-box" style="margin-top:14px">
+          <div id="tfa-enable-row">
+            <button class="btn btn-sm" id="tfa-enable" type="button">启用两步验证</button>
+            <span class="small muted">使用验证器 App 生成动态验证码。</span>
+          </div>
+          <div id="tfa-setup" class="hidden">
+            <p class="small muted" style="margin:0 0 8px">用验证器 App 扫描或手动输入下面的密钥，然后输入 App 生成的 6 位验证码。</p>
+            <div class="code-row">
+              <code class="mono" id="tfa-secret">—</code>
+              <button class="btn btn-sm" id="tfa-copy-secret" type="button" data-copy="" disabled>复制密钥</button>
+            </div>
+            <p class="small" style="margin:8px 0">otpauth 链接：<code class="mono" id="tfa-otpauth">—</code>
+              <button class="btn btn-sm" id="tfa-copy-uri" type="button" data-copy="" disabled>复制链接</button></p>
+            <form id="tfa-enable-form">
+              <div class="form-row">
+                <div class="field"><label class="f" for="tfa-enable-code">6 位验证码</label>
+                  <input class="input" id="tfa-enable-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" required></div>
+              </div>
+              <button class="btn btn-primary btn-sm" id="tfa-enable-btn" type="submit">验证并启用</button>
+              <button class="btn btn-sm" id="tfa-setup-cancel" type="button">取消</button>
+            </form>
+          </div>
+          <div id="tfa-codes" class="hidden">
+            <p class="small" style="margin:0 0 8px">恢复码只显示这一次，请立即保存。每枚恢复码只能使用一次。</p>
+            <div id="tfa-code-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:8px 0"></div>
+            <p><button class="btn btn-sm" id="tfa-copy-codes" type="button" data-copy="" disabled>复制全部</button>
+              <button class="btn btn-primary btn-sm" id="tfa-codes-saved" type="button">已保存，关闭</button></p>
+          </div>
+          <div id="tfa-disable-row" class="hidden">
+            <button class="btn btn-sm" id="tfa-disable-open" type="button">关闭两步验证</button>
+          </div>
+          <div id="tfa-disable-form" class="hidden">
+            <p class="small muted" style="margin:0 0 8px">输入验证器 App 的 6 位验证码，或当前账号密码。</p>
+            <div class="form-row">
+              <div class="field"><label class="f" for="tfa-disable-method">验证方式</label>
+                <select class="input" id="tfa-disable-method">
+                  <option value="code">6 位验证码</option>
+                  <option value="password">账号密码</option>
+                </select></div>
+              <div class="field"><label class="f" for="tfa-disable-input">验证码或密码</label>
+                <input class="input" id="tfa-disable-input" name="secret" type="password" autocomplete="off" required></div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="tfa-disable-btn" type="button">确认关闭</button>
+            <button class="btn btn-sm" id="tfa-disable-cancel" type="button">取消</button>
+          </div>
+          <p class="msg" id="tfa-msg" role="status"></p>
         </div>
         <p style="margin-top:12px"><button class="btn btn-sm" id="acc-logout" type="button">退出登录</button></p>
       </div>
@@ -123,14 +178,14 @@
 
 <footer class="foot"><div class="wrap"><span>OMC World</span><span class="sep">·</span><span>© <span data-year>2026</span></span></div></footer>
 <div id="toast-host"></div>
-<script src="./config.js?v=20261111b" defer></script>
-<script src="./assets/js/util.js?v=20261111b" defer></script>
-<script src="./assets/js/api.js?v=20261111b" defer></script>
-<script src="./assets/js/address.js?v=20261111b" defer></script>
-<script src="./assets/js/live.js?v=20261111b" defer></script>
-<script src="./assets/js/chart.js?v=20261111b" defer></script>
-<script src="./assets/js/nav.js?v=20261111b" defer></script>
-<script src="./assets/js/account.js?v=20261111b" defer></script>
-<script src="./assets/js/play.js?v=20261111b" defer></script>
+<script src="./config.js?v=20261111d" defer></script>
+<script src="./assets/js/util.js?v=20261111d" defer></script>
+<script src="./assets/js/api.js?v=20261111d" defer></script>
+<script src="./assets/js/address.js?v=20261111d" defer></script>
+<script src="./assets/js/live.js?v=20261111d" defer></script>
+<script src="./assets/js/chart.js?v=20261111d" defer></script>
+<script src="./assets/js/nav.js?v=20261111d" defer></script>
+<script src="./assets/js/account.js?v=20261111d" defer></script>
+<script src="./assets/js/play.js?v=20261111d" defer></script>
 </body>
 </html>
