@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>OMC 世界地图 · 2D 俯视</title>
+<style>
+  :root { --bg:#0b0d12; --panel:rgba(18,21,28,.88); --line:#2c313d; --text:#e6e9f0; --dim:#8b93a7; --accent:#5aa9ff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:var(--bg); color:var(--text);
+    font:13px/1.45 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+  #map { display:block; width:100vw; height:100vh; touch-action:none; cursor:grab; }
+  #map.dragging { cursor:grabbing; }
+  .panel { position:fixed; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    backdrop-filter:blur(6px); box-shadow:0 6px 24px rgba(0,0,0,.45); }
+  #hud { top:12px; left:12px; width:268px; padding:10px 12px; }
+  #hud h1 { margin:0 0 2px; font-size:14px; font-weight:600; letter-spacing:.3px; }
+  #hud .sub { color:var(--dim); font-size:11px; margin-bottom:8px; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+  button { appearance:none; border:1px solid var(--line); background:#1a1e27; color:var(--text);
+    border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer; line-height:1.2; }
+  button:hover { border-color:#3d4658; background:#212734; }
+  button.on { border-color:var(--accent); color:#cfe6ff; background:#172435; }
+  button:active { transform:translateY(1px); }
+  .k { color:var(--dim); }
+  .v { color:var(--text); font-variant-numeric:tabular-nums; }
+  #readout { position:fixed; right:12px; bottom:12px; padding:8px 11px; font-variant-numeric:tabular-nums; }
+  #readout div { white-space:nowrap; }
+  #readout .k { display:inline-block; min-width:64px; }
+  #legend { position:fixed; left:12px; bottom:12px; padding:8px 11px; max-width:280px; }
+  #legend .bar { height:10px; border-radius:5px; margin:5px 0 3px;
+    background:linear-gradient(90deg,#101318,#3a3f4d,#6f7688,#b9bfcc,#f2f6ff); }
+  #legend .ticks { display:flex; justify-content:space-between; color:var(--dim); font-size:10px; }
+  #status { position:fixed; top:12px; right:12px; padding:6px 10px; color:var(--dim); }
+  #status.err { color:#ff8a8a; border-color:#5a2a2a; }
+  #err { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:24px;
+    background:rgba(5,7,10,.9); text-align:center; }
+  #err.show { display:flex; }
+  #err .box { max-width:520px; }
+  #err code { color:#ffd479; }
+  .hint { color:var(--dim); font-size:11px; margin-top:6px; }
+  @media (max-width:640px) {
+    #hud { width:calc(100vw - 24px); }
+    #legend { display:none; }
+    #readout { font-size:11px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<div id="hud" class="panel">
+  <h1>OMC 世界地图 · 2D</h1>
+  <div class="sub" id="sub">加载中…</div>
+  <div class="row">
+    <button id="layer-color" class="on">俯视彩色</button>
+    <button id="layer-height">高度灰度</button>
+  </div>
+  <div class="row">
+    <button data-zoom="-1" title="缩小">−</button>
+    <button data-zoom="1" title="放大">+</button>
+    <button id="btn-fit">看建筑</button>
+    <button id="btn-world">看全图</button>
+    <button id="btn-spawn">回到出生点</button>
+  </div>
+  <div class="row">
+    <span class="k">缩放</span><span class="v" id="zoom">1.00x</span>
+    <span class="k" style="margin-left:8px">瓦片</span><span class="v" id="tiles">-</span>
+  </div>
+  <div class="hint">拖拽平移 · 滚轮缩放 · 触摸拖动</div>
+</div>
+
+<div id="readout" class="panel">
+  <div><span class="k">世界</span><span class="v" id="ro-world">-</span></div>
+  <div><span class="k">区块</span><span class="v" id="ro-chunk">-</span></div>
+  <div><span class="k">区块内</span><span class="v" id="ro-local">-</span></div>
+</div>
+
+<div id="legend" class="panel" style="display:none">
+  <div class="k" id="legend-title">高度（Y）灰度</div>
+  <div class="bar"></div>
+  <div class="ticks"><span id="legend-min">-64</span><span>高度</span><span id="legend-max">319</span></div>
+</div>
+
+<div id="status" class="panel">初始化…</div>
+
+<div id="err"><div class="box">
+  <h2>地图数据加载失败</h2>
+  <p id="err-msg"></p>
+  <p class="hint">请确认 <code>meta.json</code> 与 <code>tiles/</code> 目录同页部署；或通过静态服务器访问（file:// 下部分浏览器会拦截 fetch，本页已内置 meta.js 回退）。</p>
+</div></div>
+
+<script src="meta.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('map');
+  var ctx = canvas.getContext('2d', { alpha: false });
+  var el = function (id) { return document.getElementById(id); };
+
+  var TILE = 256;
+  var meta = null;
+  var state = { cx: 0, cz: 0, scale: 1, layer: 'color', dpr: 1 };
+  var tiles = new Map();       // key -> {img, ok, failed}
+  var pending = 0, MAX_PENDING = 8;
+  var needRender = true;
+  var mouse = { x: 0, y: 0, inside: false };
+  var pointers = new Map();
+  var pinch = null;
+
+  function fail(msg) {
+    el('err').classList.add('show');
+    el('err-msg').textContent = msg;
+    el('status').textContent = '加载失败';
+    el('status').classList.add('err');
+  }
+
+  function loadMeta() {
+    if (window.__MAP_META__ && window.__MAP_META__.tiles) return Promise.resolve(window.__MAP_META__);
+    return fetch('meta.json', { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error('meta.json 状态码 ' + r.status);
+      return r.json();
+    });
+  }
+
+  function tileKey(x, y) { return 'z0/' + x + '_' + y; }
+
+  function tileFor(x, y) {
+    var key = tileKey(x, y);
+    var t = tiles.get(key);
+    if (t) return t;
+    t = { key: key, x: x, y: y, img: null, ok: false, failed: false };
+    tiles.set(key, t);
+    return t;
+  }
+
+  function requestTile(t, layer) {
+    if (t.ok || t.failed || t.img) return;
+    if (pending >= MAX_PENDING) return;
+    var entry = meta.tiles.filter(function (e) { return e.x === t.x && e.y === t.y; })[0];
+    if (!entry) { t.failed = true; return; }
+    var src = layer === 'height' && entry.heightFile ? entry.heightFile : entry.file;
+    var img = new Image();
+    img.decoding = 'async';
+    img.onload = function () { t.img = img; t.ok = true; pending--; needRender = true; };
+    img.onerror = function () { t.failed = true; pending--; needRender = true; };
+    pending++;
+    img.src = src;
+  }
+
+  function viewBounds() {
+    var vw = canvas.clientWidth, vh = canvas.clientHeight;
+    var halfW = vw / (2 * state.scale), halfH = vh / (2 * state.scale);
+    return { x0: state.cx - halfW, x1: state.cx + halfW, z0: state.cz - halfH, z1: state.cz + halfH };
+  }
+
+  function visibleTiles() {
+    var vb = viewBounds();
+    var tx0 = Math.floor(vb.x0 / TILE), tx1 = Math.floor(vb.x1 / TILE);
+    var tz0 = Math.floor(vb.z0 / TILE), tz1 = Math.floor(vb.z1 / TILE);
+    var out = [];
+    for (var ty = tz0; ty <= tz1; ty++) {
+      for (var tx = tx0; tx <= tx1; tx++) {
+        var entry = tileEntry(tx, ty);
+        if (entry) out.push(entry);
+      }
+    }
+    return out;
+  }
+
+  function tileEntry(x, y) {
+    if (!meta) return null;
+    var key = x + ',' + y;
+    if (!meta._map) {
+      meta._map = new Map();
+      for (var i = 0; i < meta.tiles.length; i++) meta._map.set(meta.tiles[i].x + ',' + meta.tiles[i].y, meta.tiles[i]);
+    }
+    return meta._map.get(key) || null;
+  }
+
+  function resize() {
+    state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(canvas.clientWidth * state.dpr);
+    canvas.height = Math.round(canvas.clientHeight * state.dpr);
+    needRender = true;
+  }
+
+  function worldToScreen(wx, wz) {
+    return { x: (wx - state.cx) * state.scale + canvas.clientWidth / 2,
+             y: (wz - state.cz) * state.scale + canvas.clientHeight / 2 };
+  }
+
+  function render() {
+    needRender = false;
+    var vw = canvas.clientWidth, vh = canvas.clientHeight;
+    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+    ctx.fillStyle = '#0b0d12';
+    ctx.fillRect(0, 0, vw, vh);
+    if (!meta) return;
+
+    var list = visibleTiles();
+    var loaded = 0, failed = 0;
+    ctx.imageSmoothingEnabled = state.scale < 1;
+
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      var t = tileFor(e.x, e.y);
+      requestTile(t, state.layer);
+      var p = worldToScreen(e.x * TILE, e.y * TILE);
+      var size = TILE * state.scale;
+      if (t.ok && t.img) {
+        loaded++;
+        ctx.drawImage(t.img, p.x, p.y, size, size);
+      } else if (t.failed) {
+        failed++;
+        ctx.fillStyle = '#20242e';
+        ctx.fillRect(p.x, p.y, size, size);
+        ctx.strokeStyle = '#3a4050';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(p.x + 0.5, p.y + 0.5, size - 1, size - 1);
+        if (state.scale >= 0.45) {
+          ctx.fillStyle = '#6f788c';
+          ctx.font = '12px "Segoe UI", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('缺失', p.x + size / 2, p.y + size / 2);
+        }
+      } else {
+        ctx.fillStyle = '#141822';
+        ctx.fillRect(p.x, p.y, size, size);
+      }
+    }
+
+    // 建筑包围盒
+    var bb = meta.bounds && meta.bounds.blocks;
+    if (bb && state.scale >= 0.2) {
+      var a = worldToScreen(bb.minX, bb.minZ);
+      var b = worldToScreen(bb.maxX + 1, bb.maxZ + 1);
+      ctx.strokeStyle = 'rgba(90,169,255,.55)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      ctx.setLineDash([]);
+    }
+
+    // 出生点
+    var sp = meta.world && meta.world.spawn;
+    if (sp) {
+      var s = worldToScreen(sp.x + 0.5, sp.z + 0.5);
+      ctx.strokeStyle = '#ffd479';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(s.x - 6, s.y); ctx.lineTo(s.x + 6, s.y);
+      ctx.moveTo(s.x, s.y - 6); ctx.lineTo(s.x, s.y + 6);
+      ctx.stroke();
+      if (state.scale >= 0.6) {
+        ctx.fillStyle = '#ffd479';
+        ctx.font = '11px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('spawn', s.x + 9, s.y + 2);
+      }
+    }
+
+    el('tiles').textContent = loaded + '/' + list.length + (failed ? ' · 缺' + failed : '');
+    el('zoom').textContent = state.scale.toFixed(2) + 'x';
+    if (failed > 0) {
+      el('status').textContent = '缺瓦片 ' + failed + '（占位显示）';
+      el('status').classList.add('err');
+    } else {
+      el('status').textContent = '就绪 · 区块 ' + meta.chunkStats.total + ' · 有方块 ' + meta.chunkStats.withBlocks;
+      el('status').classList.remove('err');
+    }
+  }
+
+  function loop() {
+    if (needRender) render();
+    requestAnimationFrame(loop);
+  }
+
+  function setScale(s, anchorX, anchorY) {
+    var lo = meta ? meta.zoom.min : 0.25, hi = meta ? meta.zoom.max : 8;
+    s = Math.max(lo, Math.min(hi, s));
+    if (anchorX !== undefined) {
+      // 以屏幕点 (anchorX, anchorY) 为锚点缩放
+      var before = screenToWorld(anchorX, anchorY);
+      state.scale = s;
+      var after = screenToWorld(anchorX, anchorY);
+      state.cx += before.x - after.x;
+      state.cz += before.z - after.z;
+    } else {
+      state.scale = s;
+    }
+    needRender = true;
+  }
+
+  function screenToWorld(sx, sy) {
+    return { x: (sx - canvas.clientWidth / 2) / state.scale + state.cx,
+             z: (sy - canvas.clientHeight / 2) / state.scale + state.cz };
+  }
+
+  function centerOn(wx, wz) { state.cx = wx; state.cz = wz; needRender = true; }
+
+  function fitBuild() {
+    var bb = meta.bounds && meta.bounds.blocks;
+    if (!bb) return centerOn(0, 0);
+    var w = Math.max(32, bb.maxX - bb.minX + 1), h = Math.max(32, bb.maxZ - bb.minZ + 1);
+    var pad = 1.6;
+    var s = Math.min(canvas.clientWidth / (w * pad), canvas.clientHeight / (h * pad));
+    state.scale = Math.max(meta.zoom.min, Math.min(meta.zoom.max, s));
+    centerOn((bb.minX + bb.maxX) / 2, (bb.minZ + bb.maxZ) / 2);
+  }
+
+  function fitWorld() {
+    var wb = meta.bounds && meta.bounds.world;
+    if (!wb) return fitBuild();
+    var w = Math.max(32, wb.maxX - wb.minX + 1), h = Math.max(32, wb.maxZ - wb.minZ + 1);
+    var s = Math.min(canvas.clientWidth / (w * 1.05), canvas.clientHeight / (h * 1.05));
+    state.scale = Math.max(meta.zoom.min, Math.min(meta.zoom.max, s));
+    centerOn((wb.minX + wb.maxX) / 2, (wb.minZ + wb.maxZ) / 2);
+  }
+
+  function goSpawn() {
+    var sp = meta.world && meta.world.spawn;
+    if (!sp) return fitBuild();
+    centerOn(sp.x, sp.z);
+    setScale(1);
+  }
+
+  function updateReadout() {
+    if (!meta) return;
+    if (!mouse.inside) {
+      el('ro-world').textContent = '-'; el('ro-chunk').textContent = '-'; el('ro-local').textContent = '-';
+      return;
+    }
+    var w = screenToWorld(mouse.x, mouse.y);
+    var bx = Math.floor(w.x), bz = Math.floor(w.z);
+    var cx = bx >> 4, cz = bz >> 4;
+    el('ro-world').textContent = bx + ', ' + bz;
+    el('ro-chunk').textContent = cx + ', ' + cz;
+    el('ro-local').textContent = (bx - cx * 16) + ', ' + (bz - cz * 16);
+  }
+
+  // ---- 交互 ----
+  canvas.addEventListener('pointerdown', function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    canvas.classList.add('dragging');
+    if (pointers.size === 2) {
+      var pts = Array.from(pointers.values());
+      pinch = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), scale: state.scale };
+    }
+  });
+
+  canvas.addEventListener('pointermove', function (e) {
+    var rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top; mouse.inside = true;
+    var prev = pointers.get(e.pointerId);
+    if (!prev) { updateReadout(); return; }
+    var dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    prev.x = e.clientX; prev.y = e.clientY;
+    if (pointers.size === 2 && pinch) {
+      var pts = Array.from(pointers.values());
+      var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (pinch.dist > 0) {
+        var midX = (pts[0].x + pts[1].x) / 2 - rect.left;
+        var midY = (pts[0].y + pts[1].y) / 2 - rect.top;
+        setScale(pinch.scale * (d / pinch.dist), midX, midY);
+      }
+    } else if (pointers.size === 1) {
+      state.cx -= dx / state.scale;
+      state.cz -= dy / state.scale;
+      needRender = true;
+    }
+    updateReadout();
+  });
+
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 0) canvas.classList.remove('dragging');
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointerleave', function () { mouse.inside = false; updateReadout(); });
+
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var rect = canvas.getBoundingClientRect();
+    var factor = Math.pow(1.0015, -e.deltaY);
+    setScale(state.scale * factor, e.clientX - rect.left, e.clientY - rect.top);
+    updateReadout();
+  }, { passive: false });
+
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  window.addEventListener('keydown', function (e) {
+    var step = 120 / state.scale;
+    if (e.key === 'ArrowLeft') { state.cx -= step; needRender = true; }
+    else if (e.key === 'ArrowRight') { state.cx += step; needRender = true; }
+    else if (e.key === 'ArrowUp') { state.cz -= step; needRender = true; }
+    else if (e.key === 'ArrowDown') { state.cz += step; needRender = true; }
+    else if (e.key === '+' || e.key === '=') setScale(state.scale * 1.25);
+    else if (e.key === '-') setScale(state.scale / 1.25);
+    else if (e.key === '0') goSpawn();
+    else return;
+    e.preventDefault();
+  });
+
+  document.querySelectorAll('[data-zoom]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var dir = parseInt(b.getAttribute('data-zoom'), 10);
+      setScale(state.scale * (dir > 0 ? 1.35 : 1 / 1.35));
+    });
+  });
+  el('btn-fit').addEventListener('click', fitBuild);
+  el('btn-world').addEventListener('click', fitWorld);
+  el('btn-spawn').addEventListener('click', goSpawn);
+
+  function setLayer(layer) {
+    if (state.layer === layer) return;
+    state.layer = layer;
+    tiles.forEach(function (t) { t.img = null; t.ok = false; t.failed = false; });
+    el('layer-color').classList.toggle('on', layer === 'color');
+    el('layer-height').classList.toggle('on', layer === 'height');
+    el('legend').style.display = layer === 'height' ? '' : 'none';
+    needRender = true;
+  }
+  el('layer-color').addEventListener('click', function () { setLayer('color'); });
+  el('layer-height').addEventListener('click', function () { setLayer('height'); });
+
+  window.addEventListener('resize', function () { resize(); updateReadout(); });
+
+  // ---- 启动 ----
+  resize();
+  loadMeta().then(function (m) {
+    meta = m;
+    el('sub').textContent = (m.world.levelName || '世界') + ' · ' + m.world.dataVersion + ' · 区块 ' + m.chunkStats.total;
+    el('legend-min').textContent = (m.bounds.blocks ? m.bounds.blocks.minY : -64);
+    el('legend-max').textContent = (m.bounds.blocks ? m.bounds.blocks.maxY : 319);
+    fitBuild();
+    if (m.missing && m.missing.length) {
+      el('status').textContent = '元数据缺失瓦片 ' + m.missing.length;
+      el('status').classList.add('err');
+    }
+    updateReadout();
+    loop();
+  }).catch(function (e) { fail(String(e && e.message ? e.message : e)); });
+})();
+</script>
+</body>
+</html>
