@@ -5,7 +5,7 @@ window.MCW_CONFIG = {
   /* 公网连接地址由 /api/link/start 返回，前端不再保存静态地址 */
   port: 25565,
   /* 服务器支持的最低版本（ViaVersion 协议翻译，1.21.11 ~ 26.3 都能进） */
-  version: "1.21.11",
+  version: "1.21.11 ~ 26.3",
   /* 账号页地址；留空 = 暂未开放 */
   accountUrl: "",
   /* 轮询间隔（毫秒） */
