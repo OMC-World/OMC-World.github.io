@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-11T10:27:43.027Z",
+  "generatedAt": "2026-11-11T11:26:45.070Z",
   "world": {
     "path": "D:\\dev\\DeepSeekHarnessWorkspace\\FMC-Login-Server\\world",
     "levelName": "mcworld-login",
     "dataVersion": 4790,
     "gameType": 1,
     "spawn": {
-      "x": 19,
-      "y": 6,
-      "z": 22
+      "x": 0,
+      "y": 7,
+      "z": 0
     }
   },
   "tileSize": 256,
@@ -28,7 +28,7 @@
     "blocks": {
       "minX": -11,
       "maxX": 28,
-      "minY": 5,
+      "minY": 3,
       "maxY": 20,
       "minZ": -8,
       "maxZ": 45
@@ -49,15 +49,19 @@
   "blockTop10": [
     [
       "stone_bricks",
-      1076
+      1501
+    ],
+    [
+      "stone_brick_wall",
+      238
     ],
     [
       "oak_planks",
       219
     ],
     [
-      "stone_brick_wall",
-      179
+      "chiseled_stone_bricks",
+      172
     ],
     [
       "oak_stairs",
@@ -77,18 +81,14 @@
     ],
     [
       "stone_brick_stairs",
-      43
+      44
     ],
     [
       "obsidian",
       34
-    ],
-    [
-      "chiseled_stone_bricks",
-      32
     ]
   ],
-  "blockTotal": 1986,
+  "blockTotal": 2612,
   "tiles": [
     {
       "z": 0,
@@ -97,7 +97,7 @@
       "file": "tiles/z0/-1_-1.png",
       "heightFile": "height/z0/-1_-1.png",
       "chunks": 1,
-      "blocks": 140
+      "blocks": 279
     },
     {
       "z": 0,
@@ -106,7 +106,7 @@
       "file": "tiles/z0/0_-1.png",
       "heightFile": "height/z0/0_-1.png",
       "chunks": 1,
-      "blocks": 173
+      "blocks": 332
     },
     {
       "z": 0,
@@ -115,7 +115,7 @@
       "file": "tiles/z0/-1_0.png",
       "heightFile": "height/z0/-1_0.png",
       "chunks": 2,
-      "blocks": 537
+      "blocks": 691
     },
     {
       "z": 0,
@@ -124,7 +124,7 @@
       "file": "tiles/z0/0_0.png",
       "heightFile": "height/z0/0_0.png",
       "chunks": 6,
-      "blocks": 1136
+      "blocks": 1310
     }
   ],
   "heightTiles": [
@@ -156,11 +156,11 @@
   "missing": [],
   "totals": {
     "tiles": 4,
-    "tileBytes": 3016,
-    "heightBytes": 1628,
-    "bytes": 4644
+    "tileBytes": 3212,
+    "heightBytes": 1652,
+    "bytes": 4864
   },
-  "elapsedMs": 114,
+  "elapsedMs": 7896,
   "resume": false,
   "shading": "cross-region"
 }
