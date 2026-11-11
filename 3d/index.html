@@ -242,7 +242,7 @@
     queue = chunks.slice();
     el('loading').classList.add('show');
     el('loading').textContent = '加载网格 0/' + queue.length;
-    window.__SPAWN__ = spawn;
+    window.__SPAWN__ = (index.world && index.world.spawn) || null;
   }
 
   function lookToward(t) {
