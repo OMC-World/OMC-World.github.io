@@ -2,94 +2,64 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OMC World · 服务器状态</title>
-<meta name="description" content="OMC World 服务器实时状态：在线人数、TPS 与连接地址。">
-<link rel="icon" href="./favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./assets/css/style.css?v=20261111d">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OMC 地图 · 地球Online</title>
+<meta name="description" content="地球Online 建筑世界地图：2D 俯视图与 3D 自由视角。">
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--dim:#8b949e;--acc:#4c8dff;--ok:#3fb950}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#16233a 0%,var(--bg) 60%);color:var(--text);font:16px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;min-height:100vh}
+  header{padding:48px 24px 8px;text-align:center}
+  h1{margin:0 0 8px;font-size:clamp(26px,5vw,40px);letter-spacing:.5px}
+  .sub{color:var(--dim);margin:0}
+  main{max-width:960px;margin:0 auto;padding:24px}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;text-decoration:none;color:inherit;transition:.18s}
+  a.card:hover{border-color:var(--acc);transform:translateY(-2px)}
+  .card h2{margin:0 0 6px;font-size:20px}
+  .card p{margin:0;color:var(--dim);font-size:14px}
+  .tag{display:inline-block;margin-top:12px;font-size:12px;color:var(--acc);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+  footer{margin-top:28px;border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;color:var(--dim);font-size:13px}
+  footer a{color:var(--dim);text-decoration:none;border-bottom:1px dotted var(--line)}
+  footer a:hover{color:var(--text)}
+  #addr{font-variant-numeric:tabular-nums}
+</style>
 </head>
 <body>
-<header class="topbar">
-  <div class="wrap topbar-in">
-    <a class="brand" href="./index.html">OMC <span>WORLD</span></a>
-    <nav class="nav">
-      <a href="./index.html">状态</a>
-      <a href="./stocks.html">股票</a>
-      <a href="./market.html">物品行情</a>
-      <a href="./play.html">进服</a>
-      <a href="./rules.html">规则</a>
-    </nav>
-    <a class="btn btn-sm account" data-account-link href="./play.html">账号绑定 <span data-account-note></span></a>
-  </div>
+<header>
+  <h1>OMC 地图</h1>
+  <p class="sub">地球Online · 建筑世界 <span id="ver">1.21.11 ~ 26.3</span></p>
 </header>
-<main class="wrap">
-  <div class="page-head">
-    <h1>服务器状态</h1>
-    <p class="sub">实时读取服务端数据，每 5 秒刷新；断线时保留最后一次成功数据。</p>
+<main>
+  <div class="grid">
+    <a class="card" href="/2d/">
+      <h2>2D 俯视图</h2>
+      <p>自上而下看建筑布局，可拖拽、缩放（0.25x–8x），显示世界与区块坐标，支持彩色与高度灰度。</p>
+      <span class="tag">原生 Canvas · 轻量</span>
+    </a>
+    <a class="card" href="/3d/">
+      <h2>3D 自由视角</h2>
+      <p>自由飞行看建筑立体结构：WASD 移动、鼠标转向、空格/Shift 升降，按区块按需加载。</p>
+      <span class="tag">原生 WebGL2 · 无需下载</span>
+    </a>
   </div>
-
-  <section class="statusbar" aria-live="polite">
-    <div class="stat-inline"><span class="k">在线</span><span class="v" id="stat-online">—</span><span class="k" id="stat-max"></span></div>
-    <div class="stat-inline"><span class="k">TPS</span><span class="v" id="stat-tps">—</span></div>
-    <div class="stat-inline"><span class="k">版本</span><span class="v" id="stat-version">—</span></div>
-    <div class="src"><span class="dot off" id="src-dot"></span><span id="src-text">连接中</span><span class="sep">·</span><span id="src-time"></span></div>
-  </section>
-
-  <div class="notice hidden" id="offline-note">
-    <span class="dot off"></span>
-    <div><b>服务端未连接</b> · <span id="offline-detail">等待服务端恢复，页面每 5 秒重试。</span></div>
-  </div>
-
-  <div class="grid-main">
-    <section class="panel">
-      <div class="panel-head"><h2>在线人数</h2><span class="meta" id="chart-meta">采样中</span></div>
-      <div class="panel-body"><div class="chart" id="online-chart"><div class="chart-empty">数据采集中</div></div></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head"><h2>服务器</h2><span class="meta" id="srv-meta">—</span></div>
-      <div class="panel-body">
-        <div class="kv kv-1">
-          <div><span>状态</span><b id="srv-state">—</b></div>
-          <div><span>版本</span><b id="srv-version">—</b></div>
-          <div><span>世界</span><b id="srv-world">—</b></div>
-          <div><span>运行</span><b id="srv-uptime">—</b></div>
-        </div>
-        <p class="small muted" id="srv-players" style="margin-top:10px">—</p>
-      </div>
-    </section>
-  </div>
-
-  <div class="cards">
-    <a class="card" href="./stocks.html"><div class="t">股票行情</div><div class="d">价格 · 涨跌 · 下单</div></a>
-    <a class="card" href="./market.html"><div class="t">物品行情</div><div class="d">成交价 · 涨跌</div></a>
-    <a class="card" href="./play.html"><div class="t">进服指引</div><div class="d">地址 · 版本</div></a>
-    <a class="card" href="./rules.html"><div class="t">玩家规则</div><div class="d">八条</div></a>
-    <a class="card" href="./play.html" data-account-link><div class="t">账号绑定</div><div class="d" data-account-note>暂未开放</div></a>
-  </div>
-
-  <section class="panel" style="margin-top:18px">
-    <div class="panel-body" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px">
-      <span class="muted small">连接地址</span>
-      <span class="addr" id="addr">待开通</span>
-      <button class="btn btn-sm" type="button" id="copy-addr" data-copy="" disabled>未开通</button>
-      <span class="sep">|</span>
-      <span class="muted small">版本</span><b class="mono" id="addr-version">—</b>
-      <p class="small muted" style="flex-basis:100%;margin:0">地址每小时自动更新，如连不上请刷新页面</p>
-    </div>
-  </section>
+  <footer>
+    <span>服务器地址：<span id="addr">待开通</span></span>
+    <span><a href="/home/">主页与账号</a> · <a href="/home/play.html">进服与绑定</a> · <a href="/home/stocks.html">行情</a></span>
+  </footer>
 </main>
-
-<footer class="foot"><div class="wrap"><span>OMC World</span><span class="sep">·</span><span>数据来自服务端公开接口</span><span class="sep">·</span><span>© <span data-year>2026</span></span></div></footer>
-<div id="toast-host"></div>
-
-<script src="./config.js?v=20261111d" defer></script>
-<script src="./assets/js/util.js?v=20261111d" defer></script>
-<script src="./assets/js/api.js?v=20261111d" defer></script>
-<script src="./assets/js/address.js?v=20261111d" defer></script>
-<script src="./assets/js/live.js?v=20261111d" defer></script>
-<script src="./assets/js/chart.js?v=20261111d" defer></script>
-<script src="./assets/js/nav.js?v=20261111d" defer></script>
-<script src="./assets/js/home.js?v=20261111d" defer></script>
+<script>
+(function(){
+  var el = document.getElementById('addr');
+  function set(v){ el.textContent = v && !/example|your-|待开通/.test(v) ? v : '待开通'; }
+  fetch('https://omc-world.pages.dev/api/status',{cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.version) document.getElementById('ver').textContent = '1.21.11 ~ ' + d.version;
+      set(d && d.serverAddress);
+    })
+    .catch(function(){ set(null); });
+})();
+</script>
 </body>
 </html>
