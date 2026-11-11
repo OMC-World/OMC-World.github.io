@@ -6,7 +6,7 @@
 <title>OMC World · 服务器状态</title>
 <meta name="description" content="OMC World 服务器实时状态：在线人数、TPS 与连接地址。">
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./assets/css/style.css?v=20261110e">
+<link rel="stylesheet" href="./assets/css/style.css?v=20261111b">
 </head>
 <body>
 <header class="topbar">
@@ -74,7 +74,8 @@
       <span class="addr" id="addr">待开通</span>
       <button class="btn btn-sm" type="button" id="copy-addr" data-copy="" disabled>未开通</button>
       <span class="sep">|</span>
-      <span class="muted small">版本</span><b class="mono" id="addr-version">1.21.11</b>
+      <span class="muted small">版本</span><b class="mono" id="addr-version">—</b>
+      <p class="small muted" style="flex-basis:100%;margin:0">地址每小时自动更新，如连不上请刷新页面</p>
     </div>
   </section>
 </main>
@@ -82,12 +83,13 @@
 <footer class="foot"><div class="wrap"><span>OMC World</span><span class="sep">·</span><span>数据来自服务端公开接口</span><span class="sep">·</span><span>© <span data-year>2026</span></span></div></footer>
 <div id="toast-host"></div>
 
-<script src="./config.js?v=20261110e" defer></script>
-<script src="./assets/js/util.js?v=20261110e" defer></script>
-<script src="./assets/js/api.js?v=20261110e" defer></script>
-<script src="./assets/js/live.js?v=20261110e" defer></script>
-<script src="./assets/js/chart.js?v=20261110e" defer></script>
-<script src="./assets/js/nav.js?v=20261110e" defer></script>
-<script src="./assets/js/home.js?v=20261110e" defer></script>
+<script src="./config.js?v=20261111b" defer></script>
+<script src="./assets/js/util.js?v=20261111b" defer></script>
+<script src="./assets/js/api.js?v=20261111b" defer></script>
+<script src="./assets/js/address.js?v=20261111b" defer></script>
+<script src="./assets/js/live.js?v=20261111b" defer></script>
+<script src="./assets/js/chart.js?v=20261111b" defer></script>
+<script src="./assets/js/nav.js?v=20261111b" defer></script>
+<script src="./assets/js/home.js?v=20261111b" defer></script>
 </body>
 </html>
