@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OMC 地图 · 地球Online</title>
+<meta name="description" content="地球Online 建筑世界地图：2D 俯视图与 3D 自由视角。">
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--dim:#8b949e;--acc:#4c8dff;--ok:#3fb950}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#16233a 0%,var(--bg) 60%);color:var(--text);font:16px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;min-height:100vh}
+  header{padding:48px 24px 8px;text-align:center}
+  h1{margin:0 0 8px;font-size:clamp(26px,5vw,40px);letter-spacing:.5px}
+  .sub{color:var(--dim);margin:0}
+  main{max-width:960px;margin:0 auto;padding:24px}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;text-decoration:none;color:inherit;transition:.18s}
+  a.card:hover{border-color:var(--acc);transform:translateY(-2px)}
+  .card h2{margin:0 0 6px;font-size:20px}
+  .card p{margin:0;color:var(--dim);font-size:14px}
+  .tag{display:inline-block;margin-top:12px;font-size:12px;color:var(--acc);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+  footer{margin-top:28px;border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;color:var(--dim);font-size:13px}
+  footer a{color:var(--dim);text-decoration:none;border-bottom:1px dotted var(--line)}
+  footer a:hover{color:var(--text)}
+  #addr{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header>
+  <h1>OMC 地图</h1>
+  <p class="sub">地球Online · 建筑世界 <span id="ver">1.21.11 ~ 26.3</span></p>
+</header>
+<main>
+  <div class="grid">
+    <a class="card" href="/2d/">
+      <h2>2D 俯视图</h2>
+      <p>自上而下看建筑布局，可拖拽、缩放（0.25x–8x），显示世界与区块坐标，支持彩色与高度灰度。</p>
+      <span class="tag">原生 Canvas · 轻量</span>
+    </a>
+    <a class="card" href="/3d/">
+      <h2>3D 自由视角</h2>
+      <p>自由飞行看建筑立体结构：WASD 移动、鼠标转向、空格/Shift 升降，按区块按需加载。</p>
+      <span class="tag">原生 WebGL2 · 无需下载</span>
+    </a>
+  </div>
+  <footer>
+    <span>服务器地址：<span id="addr">待开通</span></span>
+    <span><a href="/home/">主页与账号</a> · <a href="/home/play.html">进服与绑定</a> · <a href="/home/stocks.html">行情</a></span>
+  </footer>
+</main>
+<script>
+(function(){
+  var el = document.getElementById('addr');
+  function set(v){ el.textContent = v && !/example|your-|待开通/.test(v) ? v : '待开通'; }
+  fetch('https://omc-world.pages.dev/api/status',{cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.version) document.getElementById('ver').textContent = '1.21.11 ~ ' + d.version;
+      set(d && d.serverAddress);
+    })
+    .catch(function(){ set(null); });
+})();
+</script>
+</body>
+</html>
