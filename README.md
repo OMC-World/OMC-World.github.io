@@ -9,7 +9,7 @@
 | `index.html` | 实时状态：在线人数采样折线、TPS、服务器信息、入口卡片、连接地址 |
 | `stocks.html` | 股票列表、详情折线、买入/卖出下单 |
 | `market.html` | 物品行情与单品走势 |
-| `play.html` | 连接地址、版本、三步进服 |
+| `play.html` | 连接地址、版本、账号登录 / 两步验证 / MC 绑定 / 我的订单 |
 | `rules.html` | 玩家规则（八条） |
 | `404.html` | 页面不存在 |
 
@@ -46,8 +46,20 @@ window.MCW_CONFIG = {
 | GET | `/api/stocks/<symbol>` | 单只股票 + `depth{bids,asks}`（页面不使用深度） |
 | POST | `/api/stocks/trade` | `{symbol, side:'buy'|'sell', qty, linkCode}` → `{ok, filled, price, total, balance}` |
 | GET | `/api/plots` | `{ok, ts, plots[]}`（预留，页面暂未使用） |
+| POST | `/api/auth/register` | `{email,password}` → `{ok,userId}`；注册不建会话 |
+| POST | `/api/auth/login` | `{email,password}` → `{ok,userId,token,expiresIn}` + `omc_session` cookie；开启 2FA 的账号返回 `{twoFactorRequired:true,challengeId,expiresIn}` |
+| POST | `/api/login/2fa` | `{challengeId,code}` → 建会话；`code` 为 6 位 TOTP 或恢复码 |
+| GET | `/api/me` | `{ok,user{...twoFactor,recoveryCodesLeft}}` |
+| POST | `/api/logout` | 清除会话 |
+| POST | `/api/2fa/setup` | 需会话 → `{secret,otpauthUrl}`；已启用 409 `already_enabled` |
+| POST | `/api/2fa/enable` | `{code}` → `{recoveryCodes:[10]}`，明文只出现一次 |
+| POST | `/api/2fa/disable` | `{code}` 或 `{password}` → `{ok}` |
+| GET | `/api/link/start` | 需会话 → 6 位绑定码与 `serverAddress` |
+| GET | `/api/orders/mine` | 需会话 → `{items[]}` |
 
 错误统一为 `{ok:false, error:{code, message}}`，页面直接展示 `message`。
+
+`/api/me` 的 `twoFactor` 在 `user` 内；恢复码只在 `/api/2fa/enable` 响应中明文返回一次，页面关闭后不再展示。
 
 ## 本地预览
 
