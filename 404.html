@@ -4,12 +4,60 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AMC · Amazing Minecraft</title>
-<meta http-equiv="refresh" content="0;url=https://amazing-minecraft.pages.dev/">
 <link rel="canonical" href="https://amazing-minecraft.pages.dev/">
-<script>location.replace("https://amazing-minecraft.pages.dev/");</script>
+<noscript><meta http-equiv="refresh" content="0;url=https://amazing-minecraft.pages.dev/"></noscript>
+<script>
+/* Old single-site host, deep-link map.
+ * The site moved to amazing-minecraft.pages.dev; this page keeps bookmarks and
+ * in-game links working instead of dumping everyone on the root page.
+ * Mapping is pure and testable: AMC.dest(pathname) -> path on the new site. */
+window.AMC = (function () {
+  var SITE = 'https://amazing-minecraft.pages.dev';
+  /* Exact paths the old host served (with and without .html). */
+  var EXACT = {
+    '/play': '/play', '/play.html': '/play',
+    '/account': '/play', '/account.html': '/play',
+    '/verify': '/verify', '/verify.html': '/verify',
+    '/stocks': '/stocks', '/stocks.html': '/stocks',
+    '/market': '/market', '/market.html': '/market',
+    '/rules': '/rules', '/rules.html': '/rules',
+    '/2d': '/2d/', '/3d': '/3d/', '/map': '/map/', '/pack': '/pack/'
+  };
+  /* Deep links under a section go to that section's root. */
+  var PREFIX = [
+    ['/2d/', '/2d/'],
+    ['/3d/', '/3d/'],
+    ['/map/', '/map/'],
+    ['/pack/', '/pack/']
+  ];
+  function dest(pathname) {
+    var p = String(pathname || '/').toLowerCase();
+    if (p.length > 1) p = p.replace(/\/+$/, '');
+    if (EXACT[p]) return EXACT[p];
+    for (var i = 0; i < PREFIX.length; i++) {
+      var base = PREFIX[i][0].replace(/\/$/, '');
+      if (p === base || p.indexOf(PREFIX[i][0]) === 0) return PREFIX[i][1];
+    }
+    return '/';
+  }
+  function href(pathname, search, hash) {
+    return SITE + dest(pathname) + (search || '') + (hash || '');
+  }
+  return { site: SITE, dest: dest, href: href };
+})();
+(function () {
+  location.replace(window.AMC.href(location.pathname, location.search, location.hash));
+})();
+</script>
 </head>
 <body style="background:#0f1115;color:#e6e8ee;font:16px/1.6 system-ui,sans-serif;padding:48px">
 <p>正在前往 AMC · Amazing Minecraft…</p>
-<p><a style="color:#4c8dff" href="https://amazing-minecraft.pages.dev/">若没有自动跳转，点此继续</a></p>
+<p><a id="amc-fallback" style="color:#4c8dff" href="https://amazing-minecraft.pages.dev/">若没有自动跳转，点此继续</a></p>
+<script>
+(function () {
+  var a = document.getElementById('amc-fallback');
+  if (a) a.href = window.AMC.href(location.pathname, location.search, location.hash);
+})();
+</script>
 </body>
 </html>
