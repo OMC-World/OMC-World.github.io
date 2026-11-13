@@ -21,19 +21,26 @@ window.AMC = (function () {
     '/stocks': '/stocks', '/stocks.html': '/stocks',
     '/market': '/market', '/market.html': '/market',
     '/rules': '/rules', '/rules.html': '/rules',
-    '/2d': '/2d/', '/3d': '/3d/', '/map': '/map/', '/pack': '/pack/'
+    '/2d': '/2d/', '/3d': '/3d/', '/map': '/map/'
   };
   /* Deep links under a section go to that section's root. */
   var PREFIX = [
     ['/2d/', '/2d/'],
     ['/3d/', '/3d/'],
-    ['/map/', '/map/'],
-    ['/pack/', '/pack/']
+    ['/map/', '/map/']
   ];
   function dest(pathname) {
-    var p = String(pathname || '/').toLowerCase();
+    var raw = String(pathname || '/');
+    var p = raw.toLowerCase();
     if (p.length > 1) p = p.replace(/\/+$/, '');
     if (EXACT[p]) return EXACT[p];
+    /* /pack/ holds files, not a page: the resource pack zip keeps its exact
+       (case sensitive) path, and a bare /pack has nowhere to land. */
+    if (p.indexOf('/pack/') === 0) {
+      var rest = raw.slice('/pack/'.length);
+      return rest ? '/pack/' + rest : '/';
+    }
+    if (p === '/pack') return '/';
     for (var i = 0; i < PREFIX.length; i++) {
       var base = PREFIX[i][0].replace(/\/$/, '');
       if (p === base || p.indexOf(PREFIX[i][0]) === 0) return PREFIX[i][1];
