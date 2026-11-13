@@ -3,13 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AMC · Amazing Minecraft · 服务器</title>
-<meta http-equiv="refresh" content="0;url=https://amazing-minecraft.pages.dev/">
-<link rel="canonical" href="https://amazing-minecraft.pages.dev/">
-<script>location.replace("https://amazing-minecraft.pages.dev/");</script>
+<title>AMC · 进入服务器</title>
+<link rel="canonical" href="https://amazing-minecraft.pages.dev/play">
+<script>
+/* Fixed entry point: https://omc-world.github.io/server
+ * The real site lives on amazing-minecraft.pages.dev; keep the query string and
+ * the hash so links like /server?from=wiki#join still land correctly. */
+(function () {
+  var q = location.search || '';
+  var h = location.hash || '';
+  location.replace('https://amazing-minecraft.pages.dev/play' + q + h);
+})();
+</script>
+<meta http-equiv="refresh" content="0;url=https://amazing-minecraft.pages.dev/play">
 </head>
 <body style="background:#0f1115;color:#e6e8ee;font:16px/1.6 system-ui,sans-serif;padding:48px">
 <p>正在前往 AMC · Amazing Minecraft…</p>
-<p><a style="color:#4c8dff" href="https://amazing-minecraft.pages.dev/">若没有自动跳转，点此继续</a></p>
+<p><a id="amc-go" style="color:#4c8dff" href="https://amazing-minecraft.pages.dev/play">若没有自动跳转，点此继续</a></p>
+<script>
+(function () {
+  var a = document.getElementById('amc-go');
+  if (a) a.href = 'https://amazing-minecraft.pages.dev/play' + (location.search || '') + (location.hash || '');
+})();
+</script>
 </body>
 </html>
